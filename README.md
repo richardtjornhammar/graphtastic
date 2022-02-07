@@ -144,6 +144,6 @@ code
 
 # Manually updated code backups for this library :
 
-[GitLab](https://gitlab.com/richardtjornhammar/graphtastic) https://gitlab.com/richardtjornhammar/graphtastic
-[CSDN](https://codechina.csdn.net/m0_52121311/graphtastic)  https://codechina.csdn.net/m0_52121311/graphtastic
-[Bitbucket](https://bitbucket.org/richardtjornhammar/graphtastic) https://bitbucket.org/richardtjornhammar/graphtastic
+[GitLab](https://gitlab.com/richardtjornhammar/graphtastic) | https://gitlab.com/richardtjornhammar/graphtastic
+
+[CSDN](https://codechina.csdn.net/m0_52121311/graphtastic) | https://codechina.csdn.net/m0_52121311/graphtastic
