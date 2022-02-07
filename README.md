@@ -54,3 +54,15 @@ $ jupyter-notebook graphhaxxor.ipynb
 ```
 
 and that's it.
+
+# EXAMPLE 0
+
+Running
+
+```
+import graphtastic.graphs as gg
+import graphtastic.clustering as gl
+import graphtastic.fit as gf
+import graphtastic.convert as gc
+```
+Should work if the install was succesful
