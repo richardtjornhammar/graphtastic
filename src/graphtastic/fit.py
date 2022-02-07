@@ -68,7 +68,7 @@ distance_matrix_to_geometry_conversion_notes__ = """
 
 if bUseNumba :
         @jit(nopython=True)
-        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions:int = 2 , power:int=2 )->np.array
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions:int = 2 , power:int=2 )->np.array :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**power
@@ -85,7 +85,7 @@ if bUseNumba :
                 xr = np.dot( Z.T,Vt )
                 return ( xr.T )
 else :
-        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions = 2 , power:int = 2 ) -> np.array
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions = 2 , power:int = 2 ) -> np.array :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**power
@@ -109,7 +109,7 @@ def scoring_function ( l1:str,l2:str ) -> float :
     s_ = np.log2(  2*( l1==l2 ) + 1 )
     return ( s_ )
 
-def check_input ( strp:list[str] ):
+def check_input ( strp:list[str] ) :
     err_msg = "must be called with two strings placed in a list"
     bad = False
     if not 'list' in str( type(strp) ) :

@@ -297,11 +297,6 @@ else :
                     L .append( ids )
             return ( L )
 
-        S = 1. if S==0 else S
-        crd = np.dot(use.values,coords_s.loc[use.index.values].values)/S
-        centroid_coordinates.append(crd)
-
-
 def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
         eps:float = None, minPts:int = None , bVerbose:bool = False ) -> dict :
 
