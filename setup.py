@@ -13,9 +13,10 @@ setuptools.setup(
     long_description_content_type = "text/markdown",
     url = "https://github.com/richardtjornhammar/graphtastic",
     packages = setuptools.find_packages('src'),
-    package_dir = {'graphtastic':'src/graphtastic','graphs':'src/graphs','convert':'src/convert','clustering':'src/clustering','fit':'src/fit'},
+    package_dir = {'graphtastic':'src/graphtastic','convert':'src/convert','clustering':'src/clustering','fit':'src/fit'},
     classifiers = [
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
