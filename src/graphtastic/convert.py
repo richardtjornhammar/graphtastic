@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-def read_xyz(fname='argon.xyz',sep=' ') :
+import typing
+
+def read_xyz( fname:str = 'argon.xyz', sep:str = ' ') -> list :
     coords = []
     with open(fname,'r') as input:
         for line in input:
