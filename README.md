@@ -1,4 +1,6 @@
-# A Statistical Graph Learning library for Humans
+# STILL HIGHLY EXPERIMENTAL PACKAGE !
+
+# A Graph Learning library for Humans
 
 These novel algorithms include but are not limited to:
 * A graph construction and graph searching class can be found in src/impetuous/convert.py (GraphNode). It was developed and invented as a faster alternative for hierarchical DAG construction and searching.
@@ -37,12 +39,12 @@ https://docs.microsoft.com/en-us/windows/wsl/install-win10
 
 In order to run the code in this notebook you must enter a sensible working environment. Don't worry! We have created one for you. It's version controlled against python3.7 (and python3.8) and you can get the file here:
 
-https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/impetuous-shell.nix
+https://github.com/richardtjornhammar/rixcfgs/blob/master/code/environments/graphtastic-shell.nix
 
 Since you have installed Nix as well as WSL, or use a Linux (NixOS) or bsd like system, you should be able to execute the following command in a termnial:
 
 ```
-$ nix-shell impetuous-shell.nix
+$ nix-shell graphtastic-shell.nix
 ```
 
 Now you should be able to start your jupyter notebook locally:
