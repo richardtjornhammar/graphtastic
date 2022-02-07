@@ -13,10 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from impetuous.clustering import *
-from impetuous.quantification import *
-import sys
 
-if __name__ == '__main__' :
-    contributions__ = { "Richard Tjörnhammar": "All methods" ,
-                        "Edward Tjörnhammar" : "RPLS method" }
+def read_xyz(fname='argon.xyz',sep=' ') :
+    coords = []
+    with open(fname,'r') as input:
+        for line in input:
+            lsp = [u for u in line.replace('\n','').split(sep) if len(u)>0 ]
+            print(lsp,len(lsp))
+            if len(lsp) == 4:
+                coords.append( ( lsp[0],[ float(c) for c in lsp[1:]] ) )
+    return ( coords )
