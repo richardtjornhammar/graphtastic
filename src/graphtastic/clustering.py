@@ -305,9 +305,9 @@ else :
 def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
         eps:float = None, minPts:int = None , bVerbose:bool = False ) -> dict :
 
-    def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bLengthScale:bool=False ) -> np.array :
+    def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bInvPow:bool=False ) -> np.array :
         DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
-        if bLengthScale :
+        if bInvPow :
             DP = DP**(1.0/power)
         return ( DP )
 
@@ -347,7 +347,6 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
     clustercontent , clustercontacts  =  rd['clustercontent'] , rd['clustercontacts']
     return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
 
-
 def reformat_dbscan_results ( results:dict ) -> dict :
     if True :
         clusters = {}
@@ -363,34 +362,6 @@ def reformat_dbscan_results ( results:dict ) -> dict :
                         clusters[ icontent ] = [ c[1] ]
         return ( clusters )
 
-
-if bUseNumba :
-    @jit(nopython=True)
-    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
-        Np , Nq = len(P), len(Q)
-        R2 = np.zeros(Np*Nq).reshape(Np,Nq)
-        for i in range(len(P)):
-            for j in range(len(Q)):
-                R2[i][j] = np.sum((P[i]-Q[j])**power)
-        return ( R2**(1.0/power) )
-else :
-    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
-        Np , Nq = len(P), len(Q)
-        R2 = np.zeros(Np*Nq).reshape(Np,Nq)
-        for i in range(len(P)):
-            for j in range(len(Q)):
-                R2[i][j] = np.sum((P[i]-Q[j])**power)
-        return ( R2**(1./power) )
-
-
-def select_from_distance_matrix(boolean_list:bool,distance_matrix:np.array) -> np.array :
-    return ( np.array( [ d[boolean_list] for d in distance_matrix[boolean_list]] ) )
-
-def diar ( n:int ) -> float :
-    if n>1:
-        return ( np.sqrt(n)*diar(n-1) )
-    else:
-        return ( 1. )
 
 """
 def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,

@@ -33,23 +33,29 @@ except OSError:
 
 if bUseNumba :
     @jit(nopython=True)
-    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
+    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2, bInvPow:bool=False ) -> np.array :
         Np , Nq = len(P), len(Q)
         R2 = np.zeros(Np*Nq).reshape(Np,Nq)
         for i in range(len(P)):
             for j in range(len(Q)):
                 R2[i][j] = np.sum((P[i]-Q[j])**power)
-        return ( R2**(1.0/power) )
+        if bLengthScale :
+            return ( R2**(1.0/power) )
+        else :
+            return ( R2 )
 else :
-    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
+    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2,  bInvPow:bool=False ) -> np.array :
         Np , Nq = len(P), len(Q)
         R2 = np.zeros(Np*Nq).reshape(Np,Nq)
         for i in range(len(P)):
             for j in range(len(Q)):
                 R2[i][j] = np.sum((P[i]-Q[j])**power)
-        return ( R2**(1./power) )
+        if bLengthScale :
+            return ( R2**(1.0/power) )
+        else :
+            return ( R2 )
 
-def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bLengthScale:bool=False ) -> np.array :
+def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bInvPow:bool=False ) -> np.array :
     DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
     if bLengthScale :
         DP = DP**(1.0/power)
