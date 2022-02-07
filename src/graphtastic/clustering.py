@@ -110,54 +110,6 @@ else :
                 return ( { 'labels':labels , 'centroids':centroids } )
 
 
-def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bLengthScale:bool=True ) -> np.array :
-    DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
-    if bLengthScale :
-        DP = DP**(1.0/power)
-    return ( DP )
-
-distance_matrix_to_geometry_conversion_notes = """
-*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD.
-
-*) THE DISTANCE MATRIX CONVERSION ROUTINE BACK TO ABSOLUTE COORDINATES USES R2 DISTANCES.
-"""
-
-if bUseNumba :
-        @jit(nopython=True)
-        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = False , n_dimensions:int = 2 , power:int=2 )->np.array :
-                # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
-                if not bSquared :
-                        D = D**power
-                DIM = n_dimensions
-                DIJ = D*0.
-                M = len(D)
-                for i in range(M) :
-                        for j in range(M) :
-                                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
-                D = DIJ
-                U,S,Vt = np.linalg.svd ( D , full_matrices = True )
-                S[DIM:] *= 0.
-                Z = np.diag(S**0.5)[:,:DIM]
-                xr = np.dot( Z.T,Vt )
-                return ( xr )
-else :
-        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = False , n_dimensions = 2 , power:int = 2 ) -> np.array :
-                # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
-                if not bSquared :
-                        D = D**power
-                DIM = n_dimensions
-                DIJ = D*0.
-                M = len(D)
-                for i in range(M) :
-                        for j in range(M) :
-                                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
-                D = DIJ
-                U,S,Vt = np.linalg.svd ( D , full_matrices = True )
-                S[DIM:] *= 0.
-                Z = np.diag(S**0.5)[:,:DIM]
-                xr = np.dot( Z.T,Vt )
-                return ( xr )
-
 if bUseNumba :
         @jit(nopython=True)
         def connectivity ( B:np.array , val:float , bVerbose:bool = False ) -> dict :
@@ -353,6 +305,12 @@ else :
 def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
         eps:float = None, minPts:int = None , bVerbose:bool = False ) -> dict :
 
+    def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bLengthScale:bool=False ) -> np.array :
+        DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
+        if bLengthScale :
+            DP = DP**(1.0/power)
+        return ( DP )
+
     if bVerbose :
         print ( "THIS IMPLEMENTATION FOR DBSCAN" )
         print ( "ASSESSMENT OF NOISE DIFFERS FROM" )
@@ -371,8 +329,11 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
         print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
         exit(1)
 
-    if distance_matrix is None:
-        distance_matrix = absolute_coordinates_to_distance_matrix ( coordinates )
+    if distance_matrix is None :
+        distance_matrix_ = absolute_coordinates_to_distance_matrix ( coordinates )
+        eps = eps**2.0
+    else :
+        distance_matrix_ = distance_matrix
 
     isNoise = np.sum(distance_matrix_<eps,0)-1 < minPts
     i_ = 0
@@ -385,6 +346,7 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
     rd = connectivity ( distance_matrix_ , eps )
     clustercontent , clustercontacts  =  rd['clustercontent'] , rd['clustercontacts']
     return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
+
 
 def reformat_dbscan_results ( results:dict ) -> dict :
     if True :

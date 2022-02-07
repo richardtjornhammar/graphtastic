@@ -16,12 +16,94 @@ limitations under the License.
 
 import numpy as np
 import operator
+import typing
 
-def scoring_function ( l1,l2 ) :
+import sys
+
+try :
+        from numba import jit
+        bUseNumba = True
+except ImportError :
+        print ( "ImportError:"," NUMBA. WILL NOT USE IT")
+        bUseNumba = False
+except OSError:
+        print ( "OSError:"," NUMBA. WILL NOT USE IT")
+        bUseNumba = False
+
+
+if bUseNumba :
+    @jit(nopython=True)
+    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
+        Np , Nq = len(P), len(Q)
+        R2 = np.zeros(Np*Nq).reshape(Np,Nq)
+        for i in range(len(P)):
+            for j in range(len(Q)):
+                R2[i][j] = np.sum((P[i]-Q[j])**power)
+        return ( R2**(1.0/power) )
+else :
+    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
+        Np , Nq = len(P), len(Q)
+        R2 = np.zeros(Np*Nq).reshape(Np,Nq)
+        for i in range(len(P)):
+            for j in range(len(Q)):
+                R2[i][j] = np.sum((P[i]-Q[j])**power)
+        return ( R2**(1./power) )
+
+def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bLengthScale:bool=False ) -> np.array :
+    DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
+    if bLengthScale :
+        DP = DP**(1.0/power)
+    return ( DP )
+
+distance_matrix_to_geometry_conversion_notes__ = """
+*) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED VERSION
+*) THE DISTANCE MATRIX CONVERSION ROUTINE BACK TO ABSOLUTE COORDINATES USES R2 DISTANCES.
+"""
+
+if bUseNumba :
+        @jit(nopython=True)
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions:int = 2 , power:int=2 )->np.array
+                # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
+                if not bSquared :
+                        D = D**power
+                DIM = n_dimensions
+                DIJ = D*0.
+                M = len(D)
+                for i in range(M) :
+                        for j in range(M) :
+                                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
+                D = DIJ
+                U,S,Vt = np.linalg.svd ( D , full_matrices = True )
+                S[DIM:] *= 0.
+                Z = np.diag(S**0.5)[:,:DIM]
+                xr = np.dot( Z.T,Vt )
+                return ( xr.T )
+else :
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions = 2 , power:int = 2 ) -> np.array
+                # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
+                if not bSquared :
+                        D = D**power
+                DIM = n_dimensions
+                DIJ = D*0.
+                M = len(D)
+                for i in range(M) :
+                        for j in range(M) :
+                                DIJ[i,j] = 0.5* (D[i,-1]+D[j,-1]-D[i,j])
+                D = DIJ
+                U,S,Vt = np.linalg.svd ( D , full_matrices = True )
+                S[DIM:] *= 0.
+                Z = np.diag(S**0.5)[:,:DIM]
+                xr = np.dot( Z.T,Vt )
+                return ( xr.T )
+
+def select_from_distance_matrix ( boolean_list:bool , distance_matrix:np.array ) -> np.array :
+    return ( np.array( [ d[boolean_list] for d in distance_matrix[boolean_list]] ) )
+
+def scoring_function ( l1:str,l2:str ) -> float :
     s_ = np.log2(  2*( l1==l2 ) + 1 )
     return ( s_ )
 
-def check_input ( strp ):
+def check_input ( strp:list[str] ):
     err_msg = "must be called with two strings placed in a list"
     bad = False
     if not 'list' in str( type(strp) ) :
@@ -34,7 +116,7 @@ def check_input ( strp ):
         print ( err_msg )
         exit ( 1 )
 
-def sdist ( strp , scoring_function = scoring_function ) :
+def sdist ( strp:list[str] , scoring_function = scoring_function ) :
     check_input( strp )
     s1 , s2 = strp[0] , strp[1]
     N  , M  = len(s1) , len(s2)
@@ -47,10 +129,10 @@ def sdist ( strp , scoring_function = scoring_function ) :
         W [ pos[0],pos[1] ] = sij/dij
     return ( W )
 
-def score_alignment ( string_list ,
+def score_alignment ( string_list:list[str] ,
                       scoring_function = scoring_function ,
-                      shift_allowance = 1 , off_diagonal_power=None,
-                      main_diagonal_power = 2 ) :
+                      shift_allowance:int = 1 , off_diagonal_power:int = None ,
+                      main_diagonal_power:int = 2 ) -> float :
     check_input(string_list)
     strp  = string_list.copy()
     n,m   = len(strp[0]) , len(strp[1])
@@ -83,7 +165,7 @@ def score_alignment ( string_list ,
             SL.append(Sma_)
     return ( Smax/(2*sha+1)/(n+m)*mn )
 
-def kabsch_alignment( P,Q ):
+def kabsch_alignment( P:np.array,Q:np.array )->np.array :
     #
     # https://en.wikipedia.org/wiki/Kabsch_algorithm
     # C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
@@ -111,10 +193,10 @@ def kabsch_alignment( P,Q ):
     return ( B )
 
 
-def shape_alignment( P, Q ,
-                bReturnTransform = False ,
-                bShiftModel = True ,
-                bUnrestricted = False ) :
+def shape_alignment( P:np.array, Q:np.array ,
+                bReturnTransform :bool = False ,
+                bShiftModel:bool = True ,
+                bUnrestricted:bool = False ) -> np.array :
     #
     # [*] C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
     # as of commit https://github.com/richardtjornhammar/RichTools/commit/99c79d94c2338252b1ef1067c0c061179b6edbd9 (YEAR:2016)
@@ -164,7 +246,7 @@ def shape_alignment( P, Q ,
     return ( B )
 
 
-def high_dimensional_alignment ( P , Q ) :
+def high_dimensional_alignment ( P:np.array , Q:np.array ) -> np.array :
     # HIGHER DIMENSIONAL VERSION OF
     # def KabschAlignment ( P , Q )
     #
@@ -196,8 +278,8 @@ def high_dimensional_alignment ( P , Q ) :
     DP = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in P for q in P ] ) .reshape( N,N )
     DQ = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in Q for q in Q ] ) .reshape( M,M )
     #
-    PX = distance_matrix_to_absolute_coordinates ( DP , n_dimensions = DIM ).T
-    QX = distance_matrix_to_absolute_coordinates ( DQ , n_dimensions = DIM ).T
+    PX = distance_matrix_to_absolute_coordinates ( DP , n_dimensions = DIM )
+    QX = distance_matrix_to_absolute_coordinates ( DQ , n_dimensions = DIM )
     #
     P = QX
     Q = Q
