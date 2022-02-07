@@ -13,10 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import pandas as pd
 import numpy as np
+import typing
 import sys
-import sklearn.cluster as sc
 
 try :
         from numba import jit
@@ -31,7 +30,7 @@ except OSError:
 # THE FOLLOWING KMEANS ALGORITHM IS THE AUTHOR OWN LOCAL VERSION
 if bUseNumba :
         @jit(nopython=True)
-        def seeded_kmeans( dat, cent ):
+        def seeded_kmeans( dat:np.array, cent:np.array ) -> dict :
                 #
                 # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
                 # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
@@ -70,9 +69,9 @@ if bUseNumba :
                                 if counts[i]>0:
                                         cent[i] = tmp_ce[i]/counts[i]
                 centroids = cent
-                return ( labels, centroids )
+                return ( { 'labels': labels , 'centroids': centroids } )
 else :
-        def seeded_kmeans( dat, cent ):
+        def seeded_kmeans( dat:np.array, cent:np.array ) -> dict :
                 #
                 # SLOW SLUGGISH KMEANS WITH A DUBBLE FOR LOOP
                 # IN PYTHON! WOW! SUCH SPEED!
@@ -108,26 +107,27 @@ else :
                                 if counts[i]>0:
                                         cent[i] = tmp_ce[i]/counts[i]
                 centroids = cent
-                return ( labels, centroids )
+                return ( { 'labels':labels , 'centroids':centroids } )
 
 
-#from scipy.spatial.distance import squareform , pdist
-#absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
+def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bLengthScale:bool=True ) -> np.array :
+    DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
+    if bLengthScale :
+        DP = DP**(1.0/power)
+    return ( DP )
 
 distance_matrix_to_geometry_conversion_notes = """
 *) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED ANALOG OF THAT OLD METHOD.
-
-*) PDIST REALLY LIKES TO COMPUTE SQUARE ROOT OF THINGS SO WE SQUARE THE RESULT IF IT IS NOT SQUARED.
 
 *) THE DISTANCE MATRIX CONVERSION ROUTINE BACK TO ABSOLUTE COORDINATES USES R2 DISTANCES.
 """
 
 if bUseNumba :
         @jit(nopython=True)
-        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = False , n_dimensions:int = 2 , power:int=2 )->np.array :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
-                        D = D**2.
+                        D = D**power
                 DIM = n_dimensions
                 DIJ = D*0.
                 M = len(D)
@@ -141,10 +141,10 @@ if bUseNumba :
                 xr = np.dot( Z.T,Vt )
                 return ( xr )
 else :
-        def distance_matrix_to_absolute_coordinates ( D , bSquared = False, n_dimensions=2 ):
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = False , n_dimensions = 2 , power:int = 2 ) -> np.array :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
-                        D = D**2.
+                        D = D**power
                 DIM = n_dimensions
                 DIJ = D*0.
                 M = len(D)
@@ -160,7 +160,7 @@ else :
 
 if bUseNumba :
         @jit(nopython=True)
-        def connectivity ( B , val, bVerbose=False ) :
+        def connectivity ( B:np.array , val:float , bVerbose:bool = False ) -> dict :
                 description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
                 if bVerbose :
                         print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
@@ -174,7 +174,7 @@ if bUseNumba :
                 #
                 # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
                 # ADDED TO RICHTOOLS HERE: https://github.com/richardtjornhammar/RichTools/commit/74b35df9c623bf03570707a24eafe828f461ed90#diff-25a6634263c1b1f6fc4697a04e2b9904ea4b042a89af59dc93ec1f5d44848a26
-                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY 
+                # CONNECTIVITY SEARCH FOR (connectivity) CONNECTIVITY
                 #
                 nr_sq,mr_sq = np.shape(B)
                 if nr_sq != mr_sq :
@@ -216,12 +216,12 @@ if bUseNumba :
                         Nc [res[q*2]]+= 1;
                         if bVerbose :
                                 print ( " "+str(res[q*2])+" "+str(res[2*q+1]) )
-                if bVerbose:
+                if bVerbose :
                         for i in range(-1*C) :
                                 print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
-                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+                return ( { 'clustercontent' : Nc , 'clustercontacts' : np.array(res[:-1]).reshape(-1,2) } )
 else :
-        def connectivity ( B , val, bVerbose=False ) :
+        def connectivity ( B:np.array , val:float , bVerbose:bool = False ) -> dict :
                 description="""
 This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distanc>
         """
@@ -275,7 +275,7 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
                 if bVerbose:
                         for i in range(-1*C) :
                                 print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
-                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
+                return ( { 'clustercontent' : Nc , 'clustercontacts' : np.array(res[:-1]).reshape(-1,2) } )
 
 if bUseNumba :
         @jit(nopython=True)
@@ -350,13 +350,14 @@ else :
         centroid_coordinates.append(crd)
 
 
-def dbscan ( coordinates = None , distance_matrix = None ,
-        eps = None, minPts = None , bVerbose = False ) :
+def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
+        eps:float = None, minPts:int = None , bVerbose:bool = False ) -> dict :
 
     if bVerbose :
         print ( "THIS IMPLEMENTATION FOR DBSCAN" )
         print ( "ASSESSMENT OF NOISE DIFFERS FROM" )
-        print ( "THE IMPLEMENTATION FOUND IN SKLEARN")
+        print ( "THE IMPLEMENTATION FOUND IN SKLEARN" )
+        print ( "ASSUMES LINEAR DISTANCES, NOT SQUARED" )
     #
     # FOR A DESCRIPTION OF THE CONNECTIVITY READ PAGE 30 (16 INTERNAL NUMBERING) of:
     # https://kth.diva-portal.org/smash/get/diva2:748464/FULLTEXT01.pdf
@@ -370,6 +371,9 @@ def dbscan ( coordinates = None , distance_matrix = None ,
         print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
         exit(1)
 
+    if distance_matrix is None:
+        distance_matrix = absolute_coordinates_to_distance_matrix ( coordinates )
+
     isNoise = np.sum(distance_matrix_<eps,0)-1 < minPts
     i_ = 0
     for ib in isNoise :
@@ -378,10 +382,11 @@ def dbscan ( coordinates = None , distance_matrix = None ,
             distance_matrix_.T[i_] = ( 1+eps )*10.0
             distance_matrix_[i_][i_] = 0.
         i_ = i_+1
-    clustercontent , clustercontacts  =  connectivity(distance_matrix_,eps)
+    rd = connectivity ( distance_matrix_ , eps )
+    clustercontent , clustercontacts  =  rd['clustercontent'] , rd['clustercontacts']
     return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
 
-def reformat_dbscan_results ( results ) :
+def reformat_dbscan_results ( results:dict ) -> dict :
     if True :
         clusters = {}
         for icontent in range(len(results['cluster content'])) :
@@ -399,32 +404,33 @@ def reformat_dbscan_results ( results ) :
 
 if bUseNumba :
     @jit(nopython=True)
-    def exclusive_pdist ( P , Q ) :
+    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
         Np , Nq = len(P), len(Q)
         R2 = np.zeros(Np*Nq).reshape(Np,Nq)
         for i in range(len(P)):
             for j in range(len(Q)):
-                R2[i][j] = np.sum((P[i]-Q[j])**2)
-        return ( R2 )
+                R2[i][j] = np.sum((P[i]-Q[j])**power)
+        return ( R2**(1.0/power) )
 else :
-    def exclusive_pdist ( P , Q ) :
+    def exclusive_pdist ( P:np.array , Q:np.array , power:int=2 ) -> np.array :
         Np , Nq = len(P), len(Q)
         R2 = np.zeros(Np*Nq).reshape(Np,Nq)
         for i in range(len(P)):
             for j in range(len(Q)):
-                R2[i][j] = np.sum((P[i]-Q[j])**2)
-        return ( R2 )
+                R2[i][j] = np.sum((P[i]-Q[j])**power)
+        return ( R2**(1./power) )
 
 
-def select_from_distance_matrix(boolean_list,distance_matrix):
+def select_from_distance_matrix(boolean_list:bool,distance_matrix:np.array) -> np.array :
     return ( np.array( [ d[boolean_list] for d in distance_matrix[boolean_list]] ) )
 
-def diar ( n ):
+def diar ( n:int ) -> float :
     if n>1:
         return ( np.sqrt(n)*diar(n-1) )
     else:
         return ( 1. )
 
+"""
 def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
                     distance_matrix = None , bInGroup = None , bNotInGroup = None ,
                     n_dimensions = 3 , xformat="%.3f" ,
@@ -464,11 +470,4 @@ def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
 
         rdf_source = {'density_values': dd, 'density_ids':[ xformat % (d) for d in rd ] }
         return ( rdf_source , rdf_p )
-    else :
-        print ( """calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
-                    distance_matrix = None , bInGroup = None , bNotInGroup = None ,
-                    n_dimensions = 3 , xformat="%.3f" ,
-                    constant=4.0/3.0 , rho=1.0 , rmax=None ,
-                    bRemoveZeros = False )""")
-        exit ( 1 )
-
+"""
