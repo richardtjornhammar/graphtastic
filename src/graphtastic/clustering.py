@@ -318,7 +318,7 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
     #from impetuous.clustering import connectivity
 
     import operator
-    if not operator.xor( data_frame is None , distance_matrix is None ) :
+    if not operator.xor( coordinates is None , distance_matrix is None ) :
         print ( "ONLY SUPPLY A SINGE DATA FRAME OR A DISTANCE MATRIX" )
         print ( "dbscan FAILED" )
         print ( "DATA MATRICES NEEDS TO BE SPECIFIED WITH \" distance_matrix = ... \" " )
