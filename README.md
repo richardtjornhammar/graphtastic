@@ -67,29 +67,8 @@ import graphtastic.convert as gc
 ```
 Should work if the install was succesful
 
-# Example 1 : Deterministic DBSCAN
 
-[DBSCAN](https://en.wikipedia.org/wiki/DBSCAN) is a clustering algorithm that can be seen as a way of rejecting points, from any cluster, that are positioned in low dense regions of a point cloud. This introduces holes and may result in a larger segment, that would otherwise be connected via a non dense link to become disconnected and form two segments, or clusters. The rejection criterion is simple. The central concern is to evaluate a distance matrix <img src="https://render.githubusercontent.com/render/math?math=A_{ij}">  with an applied cutoff <img src="https://render.githubusercontent.com/render/math?math=\epsilon"> this turns the distances into true or false values depending on if a pair distance between point i and j is within the distance cutoff. This new binary Neighbour matrix <img src="https://render.githubusercontent.com/render/math?math=N_{ij}=A_{ij}<\epsilon"> tells you wether or not two points are neighbours (including itself). The DBSCAN criterion states that a point is not part of any cluster if it has fewer than `minPts` neighbors. Once you've calculated the distance matrix you can immediately evaluate the number of neighbors each point has and the rejection criterion, via <img src="https://render.githubusercontent.com/render/math?math=R_i=(\sum_{j} A_{ij}<\epsilon)-1 < minPts">. If the rejection vector R value of a point is True then all the pairwise distances in the distance matrix of that point is set to a value larger than epsilon. This ensures that a distance matrix search will reject those points as neighbours of any other for the choosen epsilon. By tracing out all points that are neighbors and assessing the [connectivity](https://github.com/richardtjornhammar/graphtastic/blob/master/src/graphtastic/clustering.py) (search for connectivity) you can find all the clusters.
-
-```
-import numpy as np
-from clustering import dbscan, reformat_dbscan_results
-from graphtastic.fit import absolute_coordinates_to_distance_matrix
-
-N   = 100
-N05 = int ( np.floor(0.5*N) )
-R   = 0.25*np.random.randn(N).reshape(N05,2) + 1.5
-P   = 0.50*np.random.randn(N).reshape(N05,2)
-
-coordinates = np.array([*P,*R])
-
-results = dbscan ( distance_matrix = absolute_coordinates_to_distance_matrix(coordinates,bInvPow=True) , eps=0.45 , minPts=4 )
-clusters = reformat_dbscan_results(results)
-print ( clusters )
-
-```
-
-# Example 2 : Absolute and relative coordinates
+# Example 1 : Absolute and relative coordinates
 
 In this example, we will use the SVD based distance geometry method to go between absolute coordinates, relative coordinate distances and back to ordered absolute coordinates. Absolute coordinates are float values describing the position of something in space. If you have several of these then the same information can be conveyed via the pairwise distance graph. Going from absolute coordinates to pairwise distances is simple and only requires you to calculate all the pairwise distances between your absolute coordinates. Going back to mutually orthogonal ordered coordinates from the pariwise distances is trickier, but a solved problem. The [distance geometry](https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.8051) can be obtained with SVD and it is implemented in the `graphtastic.fit` module under the name `distance_matrix_to_absolute_coordinates`. We start by defining coordinates afterwhich we can calculate the pair distance matrix and transforming it back by using the code below
 
@@ -150,6 +129,29 @@ if __name__=='__main__':
 ```
 
 You will notice that the largest variation is now aligned with the `X axis`, the second most variation aligned with the `Y axis` and the third most, aligned with the `Z axis` while the graph topology remained unchanged.
+
+
+# Example 2 : Deterministic DBSCAN
+
+[DBSCAN](https://en.wikipedia.org/wiki/DBSCAN) is a clustering algorithm that can be seen as a way of rejecting points, from any cluster, that are positioned in low dense regions of a point cloud. This introduces holes and may result in a larger segment, that would otherwise be connected via a non dense link to become disconnected and form two segments, or clusters. The rejection criterion is simple. The central concern is to evaluate a distance matrix <img src="https://render.githubusercontent.com/render/math?math=A_{ij}">  with an applied cutoff <img src="https://render.githubusercontent.com/render/math?math=\epsilon"> this turns the distances into true or false values depending on if a pair distance between point i and j is within the distance cutoff. This new binary Neighbour matrix <img src="https://render.githubusercontent.com/render/math?math=N_{ij}=A_{ij}<\epsilon"> tells you wether or not two points are neighbours (including itself). The DBSCAN criterion states that a point is not part of any cluster if it has fewer than `minPts` neighbors. Once you've calculated the distance matrix you can immediately evaluate the number of neighbors each point has and the rejection criterion, via <img src="https://render.githubusercontent.com/render/math?math=R_i=(\sum_{j} A_{ij}<\epsilon)-1 < minPts">. If the rejection vector R value of a point is True then all the pairwise distances in the distance matrix of that point is set to a value larger than epsilon. This ensures that a distance matrix search will reject those points as neighbours of any other for the choosen epsilon. By tracing out all points that are neighbors and assessing the [connectivity](https://github.com/richardtjornhammar/graphtastic/blob/master/src/graphtastic/clustering.py) (search for connectivity) you can find all the clusters.
+
+```
+import numpy as np
+from clustering import dbscan, reformat_dbscan_results
+from graphtastic.fit import absolute_coordinates_to_distance_matrix
+
+N   = 100
+N05 = int ( np.floor(0.5*N) )
+R   = 0.25*np.random.randn(N).reshape(N05,2) + 1.5
+P   = 0.50*np.random.randn(N).reshape(N05,2)
+
+coordinates = np.array([*P,*R])
+
+results = dbscan ( distance_matrix = absolute_coordinates_to_distance_matrix(coordinates,bInvPow=True) , eps=0.45 , minPts=4 )
+clusters = reformat_dbscan_results(results)
+print ( clusters )
+
+```
 
 # Example 3 : GraphNode
 ```
