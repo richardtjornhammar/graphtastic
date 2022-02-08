@@ -264,7 +264,7 @@ class NodeGraph ( Node ) :
             from graphtastic.clustering import connectivity as connections
             results = connections ( distm , alpha )
             L = [set() for i in range(len(results[0]))]
-            for c in results['clustercontacts'] :
+            for c in results[1] :
                 L[c[0]] = L[c[0]]|set([c[1]])
             return ( L )
         #
