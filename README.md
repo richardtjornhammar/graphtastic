@@ -8,6 +8,8 @@ These novel algorithms include but are not limited to:
 * An SVD based variant of the Distance Geometry algorithm. For going from relative to absolute coordinates.
 
 [![License](https://img.shields.io/github/license/Qiskit/qiskit.svg?)](https://opensource.org/licenses/Apache-2.0)
+[![DOI](https://zenodo.org/badge/456418653.svg)](https://zenodo.org/badge/latestdoi/456418653)
+[![Downloads](https://pepy.tech/badge/graphtastic)](https://pepy.tech/project/graphtastic)
 
 Visit the active code via :
 https://github.com/richardtjornhammar/graphtastic
