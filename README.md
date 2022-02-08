@@ -1,5 +1,3 @@
-# STILL HIGHLY EXPERIMENTAL PACKAGE !
-
 # A Graph Learning library for Humans
 
 These novel algorithms include but are not limited to:
