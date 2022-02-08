@@ -112,7 +112,7 @@ else :
 
 if bUseNumba :
         @jit(nopython=True)
-        def connectivity ( B:np.array , val:float , bVerbose:bool = False ) -> dict :
+        def connectivity ( B:np.array , val:float , bVerbose:bool = False ) :
                 description = """ This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distance cutoff, you should see all the parts of the system and for a large distance cutoff, you should see the entire system. It has been employed for statistical analysis work as well as the original application where it was employed to segment molecular systems."""
                 if bVerbose :
                         print ( "CONNECTIVITY CLUSTERING OF ", np.shape(B), " MATRIX" )
@@ -171,9 +171,9 @@ if bUseNumba :
                 if bVerbose :
                         for i in range(-1*C) :
                                 print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
-                return ( { 'clustercontent' : Nc , 'clustercontacts' : np.array(res[:-1]).reshape(-1,2) } )
+                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
 else :
-        def connectivity ( B:np.array , val:float , bVerbose:bool = False ) -> dict :
+        def connectivity ( B:np.array , val:float , bVerbose:bool = False ) :
                 description="""
 This is a cutoff based clustering algorithm. The intended use is to supply a distance matrix and a cutoff value (then becomes symmetric positive).  For a small distanc>
         """
@@ -227,7 +227,7 @@ This is a cutoff based clustering algorithm. The intended use is to supply a dis
                 if bVerbose:
                         for i in range(-1*C) :
                                 print( "CLUSTER "  +str(i)+ " HAS " + str(Nc[i]) + " ELEMENTS")
-                return ( { 'clustercontent' : Nc , 'clustercontacts' : np.array(res[:-1]).reshape(-1,2) } )
+                return ( Nc , np.array(res[:-1]).reshape(-1,2) )
 
 if bUseNumba :
         @jit(nopython=True)
@@ -338,8 +338,7 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
             distance_matrix_.T[i_] = ( 1+eps )*10.0
             distance_matrix_[i_][i_] = 0.
         i_ = i_+1
-    rd = connectivity ( distance_matrix_ , eps )
-    clustercontent , clustercontacts  =  rd['clustercontent'] , rd['clustercontacts']
+    clustercontent , clustercontacts  = connectivity ( distance_matrix_ , eps )
     return ( {'cluster content': clustercontent, 'clusterid-particleid' : clustercontacts, 'is noise':isNoise} )
 
 def reformat_dbscan_results ( results:dict ) -> dict :
