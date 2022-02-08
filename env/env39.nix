@@ -6,10 +6,10 @@ let
     overrides = self: super: {
       graphtastic = super.buildPythonPackage rec {
         pname = "graphtastic";
-        version = "0.10.5";
+        version = "0.10.10";
         src = super.fetchPypi {
           inherit pname version;
-          sha256 = "0q979hlr4zrz3jb48d568rmlp8nwv9830fcx5x6jsspphnsh0ac5";
+          sha256 = "1fv251801c398swivrfv55i01y79g2vdwq7vxvzn70kc7csb8mq7";
         };
         buildInputs = with super;
           [ numpy scipy ];
@@ -23,7 +23,7 @@ stdenv.mkDerivation rec {
   name = "graphtastic";
   buildInputs = (with myPyPkgs;
     [
-      python numpy graphtastic numba
+      python numpy scipy graphtastic numba
     ]);
   src = null;
   shellHook = ''

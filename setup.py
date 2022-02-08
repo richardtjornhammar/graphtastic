@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "graphtastic",
-    version = "0.10.9",
+    version = "0.10.10",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
-    description = "Graphtastic, a Statistical Graph Learning library for Humans",
+    description = "Graphtastic, a Graph Learning library for Humans",
     long_description = long_description,
     long_description_content_type = "text/markdown",
     url = "https://github.com/richardtjornhammar/graphtastic",
