@@ -30,7 +30,7 @@ except OSError:
 # THE FOLLOWING KMEANS ALGORITHM IS THE AUTHOR OWN LOCAL VERSION
 if bUseNumba :
         @jit(nopython=True)
-        def seeded_kmeans( dat:np.array, cent:np.array ) -> dict :
+        def seeded_kmeans( dat:np.array, cent:np.array ) :
                 #
                 # PYTHON ADAPTATION OF MY C++ CODE THAT CAN BE FOUND IN
                 # https://github.com/richardtjornhammar/RichTools/blob/master/src/cluster.cc
@@ -69,9 +69,9 @@ if bUseNumba :
                                 if counts[i]>0:
                                         cent[i] = tmp_ce[i]/counts[i]
                 centroids = cent
-                return ( { 'labels': labels , 'centroids': centroids } )
+                return ( labels , centroids  )
 else :
-        def seeded_kmeans( dat:np.array, cent:np.array ) -> dict :
+        def seeded_kmeans( dat:np.array, cent:np.array ) :
                 #
                 # SLOW SLUGGISH KMEANS WITH A DUBBLE FOR LOOP
                 # IN PYTHON! WOW! SUCH SPEED!
@@ -107,7 +107,7 @@ else :
                                 if counts[i]>0:
                                         cent[i] = tmp_ce[i]/counts[i]
                 centroids = cent
-                return ( { 'labels':labels , 'centroids':centroids } )
+                return ( labels , centroids )
 
 
 if bUseNumba :
