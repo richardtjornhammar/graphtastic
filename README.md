@@ -37,7 +37,7 @@ If you cannot install it using your Wintendo then please consider installing Win
 https://docs.microsoft.com/en-us/windows/wsl/install-win10
 ```
 
-In order to run the code in this notebook you must enter a sensible working environment. Don't worry! We have created one for you. It's version controlled against python3.9 (and python3.10) and you can get the file here:
+In order to run the code in this notebook you must enter a sensible working environment. Don't worry! We have created one for you. It's version controlled against python3.9 (and experimental python3.10 support) and you can get the file here:
 
 https://github.com/richardtjornhammar/graphtastic/blob/master/env/env39.nix
 
