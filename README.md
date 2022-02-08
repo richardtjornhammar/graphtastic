@@ -137,7 +137,7 @@ You will notice that the largest variation is now aligned with the `X axis`, the
 
 ```
 import numpy as np
-from clustering import dbscan, reformat_dbscan_results
+from graphtastic.clustering import dbscan, reformat_dbscan_results
 from graphtastic.fit import absolute_coordinates_to_distance_matrix
 
 N   = 100
