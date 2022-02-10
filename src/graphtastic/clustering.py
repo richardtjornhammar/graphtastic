@@ -395,43 +395,65 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
     LINKS = {}
     cleared = set()
 
-    for I in range(N**2) : # WORST CASE SCENARIO
+    for I in range( N**2 ) : # WORST CASE SCENARIO
+
         clear = []
         if len(R) == 0 :
             break
+
         nar   = np.argmin( R )
         clu_idx = sidx[nar].replace('-','.')
-        clear .append(nar)
+
         LINKS = { **{ clu_idx : R[nar] } , **LINKS }
         lp    = {}
+
         for l in range(len(sidx)) :
             lidx = sidx[l]
             lp [ lidx ] = l
 
-        cidx = set( unpack( [ s.split('-') for s in sidx ] ) )
+        pij   = sidx[nar].split('-')
+        cidx  = set( unpack( [ s.split('-') for s in [ s for s in sidx if len(set(s.split('-'))-set(pij)) == 1 ] ] ) )-set(pij)
+        ccidx = set( [ s for s in [ s for s in sidx if len(set(s.split('-'))-set(pij)) == 1 ] ] )
         found = {}
+
+        i   = pij[0]
+        j   = pij[1]
+
         for k in cidx :
-            pij = sidx[nar].split('-')
-            i   = pij[0]
-            j   = pij[1]
-            if k == j or k == i or k in cleared or i in cleared or j in cleared :
+            h0 , h1 , h2 , q0, J = None , None , None , None, 0
+            if k == j or k == i :
                 continue
-            h1  = lp[ label_order(i,k) ]
-            h2  = lp[ label_order(j,k) ]
-            Dijk = func(R,h1,h2)
-            nidx = [ s for s in sidx[Dijk[0][1]].split('-') if not s in clu_idx ][0]
-            nclu_idx = clu_idx+'-'+nidx
+            la1 = label_order(i,k)
+            if la1 in lp :
+                J+=1
+                h1 = lp[ label_order(i,k) ]
+                h0 = h1 ; q0 = i
+            la2 = label_order(j,k)
+            if la2 in lp :
+                J+=1
+                h2 = lp[ label_order(j,k) ]
+                h0 = h2 ; q0 = j
+            if J == 2 :
+                Dijk = func ( R , h1 , h2 )
+            elif J == 1 :
+                Dijk = [[ R[h0],h0 ]]
+            else :
+                continue
+            nidx = [ s for s in sidx[Dijk[0][1]].split('-') ]
+            nidx = list( set(sidx[Dijk[0][1]].split('-'))-set(pij) )[0]
+            nclu_idx = clu_idx + '-' + nidx
             found[ nclu_idx ] = Dijk[0][0]
-            clear.append(h1)
-            clear.append(h2)
+
+        clear = [*[ lp[c] for c in ccidx ],*[nar]]
+        cleared = cleared | set( unpack( [ sidx[c].split('-') for c in clear ]) )
 
         R = rem(R,clear)
         sidx = rem(sidx,clear)
-        cleared = cleared|set(clear)
 
         for label,d in found.items() :
             R.append(d)
             sidx.append(label)
+
     return ( LINKS )
 
 
@@ -439,5 +461,5 @@ if __name__=='__main__' :
 
     D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
     print ( np.array(D) )
-    print ( linkage( D, command='min') )
-    print ( linkage( D, command='max') )
+    print ( 'min>' , linkage( D, command='min') )
+    print ( 'max>' , linkage( D, command='max') )
