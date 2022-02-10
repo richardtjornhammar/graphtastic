@@ -356,45 +356,92 @@ def reformat_dbscan_results ( results:dict ) -> dict :
                         clusters[ icontent ] = [ c[1] ]
         return ( clusters )
 
+import numpy as np
+import typing
+import numpy as np
 
-"""
-def calculate_rdf ( particles_i = None , particles_o = None , nbins=100 ,
-                    distance_matrix = None , bInGroup = None , bNotInGroup = None ,
-                    n_dimensions = 3 , xformat="%.3f" ,
-                    constant=4.0/3.0 , rho=1.0 , rmax=None ,
-                    bRemoveZeros = False ) :
+def unpack ( seq ) : # seq:Union -> Union
+    if isinstance ( seq,(list,tuple,set)) :
+        yield from ( x for y in seq for x in unpack(y) )
+    elif isinstance ( seq , dict ):
+        yield from ( x for item in seq.items() for y in item for x in unpack(y) )
+    else :
+        yield seq
 
-    import operator
-    crit0 = particles_i is None
-    crit1 = particles_i is None and particles_o is None
-    crit2 = bInGroup is None and distance_matrix is None and bNotInGroup is None
+def rem ( a:list , H:list ) -> list :
+    h0 = []
+    for h in H:
+        hp = h - np.sum(h>np.array(h0))
+        h0 .append(h)
+        a .pop(hp)
+    return(a)
 
-    if not crit2 :
-        particles_i = distance_matrix_to_absolute_coordinates ( \
-                         select_from_distance_matrix ( bInGroup    , distance_matrix ) ,
-                         n_dimensions = n_dimensions ).T
-        particles_o = distance_matrix_to_absolute_coordinates ( \
-                         select_from_distance_matrix ( bNotInGroup , distance_matrix ) ,
-                         n_dimensions = n_dimensions ).T
+def linkage ( distm:np.array , command:str = 'max' ) -> dict :
+    #
+    # CALUCULATES WHEN SAIGAS ARE LINKED
+    # MAX CORRESPONDS TO COMPLETE LINKAGE
+    # MIN CORRESPONDS TO SINGLE LINKAGE
+    #
+    D = distm
+    N = len(D)
 
-    if operator.xor( (not crit1) or (not crit0)  , not crit2 ) :
-        if not crit0 and particles_o is None :
-            particles_o = particles_i
-            bRemoveZeros = True
-        rdf_p = pd.DataFrame ( exclusive_pdist ( particles_i , particles_o ) ).apply( np.sqrt ).values.reshape(-1)
-        if bRemoveZeros :
-            rdf_p = [ r for r in rdf_p if not r==0. ]
-        if rmax is None :
-            rmax  = np.max ( rdf_p ) / diar( n_dimensions+1 )
+    sidx = [ str(i)+'-'+str(j) for i in range(N) for j in range(N) if i<j ]
+    pidx = [ [i,j] for i in range(N) for j in range(N) if i<j ]
+    R = [ D[idx[0]][idx[1]] for idx in pidx ]
 
-        rdf_p  = np.array ( [ r for r in rdf_p if r < rmax ] )
-        Y_ , X = np.histogram ( rdf_p , bins=nbins )
-        X_     = 0.5 * ( X[1:]+X[:-1] )
+    label_order = lambda i,k: i+'-'+k if '.' in i else k+'-'+i if '.' in k else  i+'-'+k if int(i)<int(k) else k+'-'+i
 
-        norm   = constant * np.pi * ( ( X_ + np.diff(X) )**(n_dimensions) - X_**(n_dimensions) ) * rho
-        dd     = Y_ / norm
-        rd     = X_
+    if command == 'max':
+        func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]>R[j] else [(R[j],j),(R[i],i)]
+    if command == 'min':
+        func  = lambda R,i,j : [(R[i],i),(R[j],j)] if R[i]<R[j] else [(R[j],j),(R[i],i)]
 
-        rdf_source = {'density_values': dd, 'density_ids':[ xformat % (d) for d in rd ] }
-        return ( rdf_source , rdf_p )
-"""
+    LINKS = {}
+    cleared = set()
+
+    for I in range(N**2) : # WORST CASE SCENARIO
+        clear = []
+        if len(R) == 0 :
+            break
+        nar   = np.argmin( R )
+        clu_idx = sidx[nar].replace('-','.')
+        clear .append(nar)
+        LINKS = { **{ clu_idx : R[nar] } , **LINKS }
+        lp    = {}
+        for l in range(len(sidx)) :
+            lidx = sidx[l]
+            lp [ lidx ] = l
+
+        cidx = [ s.split('-') for s in sidx ]
+        cidx = set([ c for c in unpack(cidx) ] )
+        found = {}
+        for k in cidx :
+            pij = sidx[nar].split('-')
+            i   = pij[0]
+            j   = pij[1]
+            if k == j or k == i :
+                continue
+            h1  = lp[ label_order(i,k) ]
+            h2  = lp[ label_order(j,k) ]
+            Dijk = func(R,h1,h2)
+            nidx = [ s for s in sidx[Dijk[0][1]].split('-') if not s in clu_idx ][0]
+            nclu_idx = clu_idx+'-'+nidx
+            found[ nclu_idx ] = Dijk[0][0]
+            clear.append(h1)
+            clear.append(h2)
+
+        R = rem(R,clear)
+        sidx = rem(sidx,clear)
+        cleared = cleared|set(clear)
+
+        for label,d in found.items() :
+            R.append(d)
+            sidx.append(label)
+    return ( LINKS )
+
+if __name__=='__main__' :
+
+    D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
+    print ( np.array(D) )
+    print ( linkage( D, command='min') )
+    print ( linkage( D, command='max') )
