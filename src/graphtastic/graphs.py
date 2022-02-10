@@ -285,15 +285,19 @@ class NodeGraph ( Node ) :
                 L .append( ids )
         return ( L )
 
+    def linkage_matrix_to_pclist ( self , links:dict ) -> None :
+        return ( None )
+
     def distance_matrix_to_pclist ( self , distm:np.array ,
                                     cluster_connections:int = 1 ,
                                     hierarchy_connections:int = 1 ,
-                                    bNonRedundant:bool = True  ) -> list :
+                                    bNonRedundant:bool = True ,
+                                    linkage_approximation:str = None ) -> list :
         #
         # FASTER PCLIST CONSTRUCTION ROUTINE
         # RETURNS LIST USEFUL FOR HIERARCHY GENERATION
         # SHOULD BE EASIER TO PARALLELIZE WITH JIT
-        # lambda p:set -> bool INVALID SYNTAX #
+        #
         logic = lambda p,c : len(p&c) >= hierarchy_connections and len(p^c)>0
         if not bNonRedundant :
             logic = lambda p,c : len(p&c) >= hierarchy_connections
@@ -305,7 +309,18 @@ class NodeGraph ( Node ) :
         if not nm[0] == nm[1]:
             print ( "DISTANCE MATRIX MUST BE A SQUAREFORM MATRIX" )
             exit(1)
-        R = sorted( list(set( distm.reshape(-1) ) ) )
+
+        if linkage_approximation is None:
+            R = sorted( list(set( distm.reshape(-1) ) ) )
+        else : # LINKAGE MATRIX TO PCLIST
+            # TEMP. COMPARISON SAIGA CODE
+            from graphtastic.clustering import linkage
+            LINKS = linkage ( distm, command=linkage_approximation )
+            epsilon = 1E-6
+            R = [ epsilon + r for r in LINKS.values() ]
+            R .append ( epsilon )
+            R = sorted( list( set( R ) ) )
+
         prev_clusters = []
         PClist = []
         for r in R :
@@ -342,7 +357,10 @@ class NodeGraph ( Node ) :
         xr = np.dot( Z.T,Vt )
         return ( xr.T )
 
-    def distance_matrix_to_graph_dag ( self , distm:np.array , n_:int=1 , bVerbose:bool=False , names:list=None ) -> None :
+    def distance_matrix_to_graph_dag ( self , distm:np.array ,
+                                       n_:int = 1 , bVerbose:bool = False ,
+                                       names:list = None ,
+                                       linkage_approximation:str = None ) -> None :
         #
         # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
         # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
@@ -358,7 +376,7 @@ class NodeGraph ( Node ) :
             if len ( names ) == m_ :
                 for I,N in zip(range(len(names)),names):
                     lookup[I] = N
-        pclist = self.distance_matrix_to_pclist( distm )
+        pclist = self.distance_matrix_to_pclist( distm , linkage_approximation = linkage_approximation )
         for pc_ in pclist :
             lpc0 = [ lookup[l] for l in list(pc_[0]) ]
             lpc1 = [ lookup[l] for l in list(pc_[1]) ]
