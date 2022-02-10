@@ -356,10 +356,6 @@ def reformat_dbscan_results ( results:dict ) -> dict :
                         clusters[ icontent ] = [ c[1] ]
         return ( clusters )
 
-import numpy as np
-import typing
-import numpy as np
-
 def unpack ( seq ) : # seq:Union -> Union
     if isinstance ( seq,(list,tuple,set)) :
         yield from ( x for y in seq for x in unpack(y) )
@@ -438,6 +434,7 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
             R.append(d)
             sidx.append(label)
     return ( LINKS )
+
 
 if __name__=='__main__' :
 
