@@ -414,7 +414,7 @@ def linkage ( distm:np.array , command:str = 'max' ) -> dict :
             pij = sidx[nar].split('-')
             i   = pij[0]
             j   = pij[1]
-            if k == j or k == i or k not in cleared or i not in cleared or j not in cleared :
+            if k == j or k == i or k in cleared or i in cleared or j in cleared :
                 continue
             h1  = lp[ label_order(i,k) ]
             h2  = lp[ label_order(j,k) ]
