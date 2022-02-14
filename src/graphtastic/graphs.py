@@ -285,8 +285,25 @@ class NodeGraph ( Node ) :
                 L .append( ids )
         return ( L )
 
-    def linkage_matrix_to_pclist ( self , links:dict ) -> None :
-        return ( None )
+    def linkages_to_pclist ( self , links:dict ) -> list :
+        bottoms_up = sorted([ (v,k) for k,v in links.items()])
+        PClist = []
+        while ( len(bottoms_up)>1 ) :
+            child = bottoms_up[0]
+            for parent in bottoms_up[1:] :
+                if child[1] in parent[1] :
+                    parent_child = [ (parent[1], child[1]) ]
+                    PClist = [ *PClist, *parent_child ]
+                    bottoms_up.remove( child )
+                    break
+        return ( PClist )
+
+    def linkages_to_graph_dag( self, links ) -> None :
+        PClist = self.linkages_to_pclist ( links )
+        for pc in PClist :
+            self.add_ascendant_descendant ( pc[0], pc[1] )
+        self.set_root_id(self.list_roots()[0] )
+
 
     def distance_matrix_to_pclist ( self , distm:np.array ,
                                     cluster_connections:int = 1 ,
@@ -363,7 +380,7 @@ class NodeGraph ( Node ) :
                                        linkage_approximation:str = None ) -> None :
         #
         # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
-        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
+        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THE IMPETUOUS REPO
         #
         if len ( distm.shape ) < 2 :
             print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
@@ -531,7 +548,6 @@ class NodeGraph ( Node ) :
         print ( json_data_txt,file=of_ )
         return( json_data_txt )
 
-
 def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
                                   identifier:str = None , sep:str = '\t' ) -> NodeGraph :
@@ -540,7 +556,6 @@ def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
         i_a = i_a , i_d = i_d ,identifier = identifier , sep = sep )
 
     return ( RichTree , ancestors , descendants )
-
 
 def write_tree( tree:NodeGraph , outfile='tree.json', bVerbose=True ):
     if bVerbose:
