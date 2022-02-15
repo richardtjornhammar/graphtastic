@@ -246,7 +246,7 @@ if __name__=='__main__' :
     print ('max>', linkage( D, command='max') )     # COMPLETE LINKAGE
 
     import graphtastic.fit as gf
-    import graphs as gg
+    import graphtastic.graphs as gg
 
     GN = gg.NodeGraph()
     GN .linkages_to_graph_dag( links )
