@@ -222,6 +222,40 @@ if __name__=='__main__':
     GN.write_json( jsonfile='./graph_hierarchy.json' )
 ```
 
+# Example 4 : NodeGraph, linkages to DAG
+
+An alternative way of constructing a DAG hierarchy is by using distance matrix linkages. For a given distance matrix the smallest non-diagonal distance is located and the two indices that share this distance are merged into a pair cluster. The new cluster distances to all other points are then determined by either assigning the smallest distance to any of the two points or the maximum. The `max` method is sometimes refered to as complete linkage while the `min` is refered to as single linkage. If this approximate approach is adopted instead of evaluating the connectivitey at every unique distance in the distance matrix then you have opted for `agglomerative hierarchical clustering`. This is indeed a lot faster but ambigious in how to linkages should be determined.
+
+You can calculate linkages as well as construct a DAG using the `NodeGraph` functionality that employs native agglomerative hierarchical clustering by executing the below code :
+
+```
+import numpy as np
+import typing
+
+if __name__=='__main__' :
+
+    import time
+    from graphtastic.clustering import linkage
+
+    D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
+    print ( np.array(D) )
+    t0 = time.time()
+    links = linkage( D, command='min')
+    dt = time.time()-t0
+    print ('min>', linkage( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
+    print ('max>', linkage( D, command='max') )     # COMPLETE LINKAGE
+
+    import graphtastic.fit as gf
+    import graphs as gg
+
+    GN = gg.NodeGraph()
+    GN .linkages_to_graph_dag( links )
+    GN .write_json( jsonfile='./graph_hierarchy.json' )
+
+```
+NOITE : This new implementation of agglomerative hierarchical clustering differs from the one present in `scipy`
+
+
 # Manually updated code backups for this library :
 
 [GitLab](https://gitlab.com/richardtjornhammar/graphtastic) | https://gitlab.com/richardtjornhammar/graphtastic
