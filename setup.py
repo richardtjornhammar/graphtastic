@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "graphtastic",
-    version = "0.11.4",
+    version = "0.11.5",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
     description = "Graphtastic, a Graph Learning library for Humans",
