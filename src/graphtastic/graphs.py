@@ -16,8 +16,138 @@ limitations under the License.
 
 import numpy as np
 import sys
-from scipy.stats import rankdata
+
 import typing
+
+class Node ( object ) :
+    def __init__ ( self ) :
+        self.id_          :str   = ""
+        self.label_       :str   = ""
+        self.description_ :str   = ""
+        self.level_       :int   = 0      # NODES ARE MYOPIC
+        self.metrics_     :list  = list()
+        self.links_       :list  = list()
+        self.ascendants_  :list  = list() # INWARD LINKS  , DIRECT ASCENDENCY  ( 1 LEVEL )
+        self.descendants_ :list  = list() # OUTWARD LINKS , DIRECT DESCENDENCY ( 1 LEVEL )
+        self.data_        :dict  = dict() # OTHER THINGS SHOULD BE ALL INFORMATION FLOATING IN USERSPACE
+
+    def is_a_root ( self, n:int=1 ) -> bool :
+        return ( len( self.ascendants_  ) < n )
+
+    def is_a_leaf( self, n:int=1 ) -> bool :
+        return ( len( self.descendants_ ) < n )
+
+    def degree ( self , degree_type:str='descendants' )->int :
+        #
+        # UNDIRECTED NODE DEGREE
+        if degree_type == 'descendants':
+            return ( len( self.descendants_ ) )
+        if degree_type == 'ascendants':
+            return ( len( self.ascendants_ ) )
+        if degree_type == 'links':
+            return ( len( self.links_ ) )
+        return (-1) # UNDEFINED OPTION
+
+    def supplement ( self, n:super ) -> None :
+        self.label_       = n.label_
+        self.description_ = n.description_
+        self.level_       = n.level_
+        self.metrics_     = [ *self.metrics_     , *n.metrics_     ]
+        self.links_       = [ *self.links_       , *n.links_       ]
+        self.ascendants_  = [ *self.ascendants_  , *n.ascendants_  ]
+        self.descendants_ = [ *self.descendants_ , *n.descendants_ ]
+        self.data_        = { **self.data_, **n.data_ }
+
+    def assign_all ( self, identification : str ,
+                           links : type(list(str())) ,
+                           label : str = "" ,
+                           description : str = "" ) -> object :
+        # ASSIGNS ALL META DATA AND BIPOLAR LINKS
+        self.set_id( identification )
+        self.add_label( label )
+        self.add_description( description )
+        self.add_links( links , bClear=True )
+        return ( self )
+
+    def set_level ( self,level:int ) -> None :
+        self.level_ = level
+
+    def set_metrics ( self , metrics:list ) -> None :
+        self.metrics_ = [ *self.metrics_ , *metrics ]
+
+    def get_metrics ( self ) -> list :
+        return ( self.metrics_ )
+
+    def level ( self ) -> None :
+        return ( self.level_ )
+
+    def get_data ( self ) -> dict :
+        return ( self.data_ )
+
+    def overwrite_data ( self, data:dict ) -> None :
+        self.data_ = data
+
+    def set_id ( self, identification:str ) -> None :
+        self.id_ = identification
+
+    def add_label ( self, label : str ) -> None :
+        self.label_ = label
+
+    def add_description ( self, description : str ) -> None :
+        self.description_ = description
+
+    def identification ( self ) -> str :
+        return ( self.id_ )
+
+    def label ( self ) -> str :
+        return ( self.label_ )
+
+    def description ( self ) -> str :
+        return ( self.description_ )
+
+    def clear_links ( self , linktype:str )->None :
+        if linktype == 'links' :
+            self.links_ = list()
+        if linktype == 'ascendants' :
+            self.ascendants_= list()
+        if linktype == 'descendants' :
+            self.descendants_ = list()
+
+    def add_link ( self, identification:str , bClear:bool = False , linktype:str = 'links' ) -> None :
+        if bClear :
+            self.clear_links( linktype )
+        self.get_links( linktype ).append( identification )
+
+    def add_links ( self, links:list[str], bClear:bool = False , linktype:str = 'links' ) -> None :
+        if bClear :
+             self.clear_links( linktype )
+        for e in links :
+            self.get_links( linktype ).append ( e )
+
+    def get_links ( self , linktype:str='links' ) -> type(list(str())) :
+        if not linktype in set([ 'links' , 'ascendants' , 'descendants' ]):
+            print ( ' \n\n!!FATAL!!\t' + ', '.join([ 'links' , 'ascendants' , 'descendants' ]) \
+                  + '\t ARE THE ONLY VALID EDGE TYPES (linktype)' )
+            exit ( 1 )
+        if linktype == 'links' :
+            return ( self.links_ )
+        if linktype == 'ascendants' :
+            return ( self.ascendants_  )
+        if linktype == 'descendants' :
+            return ( self.descendants_ )
+
+    def show ( self ) -> None :
+        s_inf = "NODE [" + str(self.identification()) \
+                   + "," + self.label() + "] - " \
+                   + self.description() + "\nEDGES:"
+        for linktype in [ 'links' , 'ascendants' , 'descendants' ] :
+            s_inf += '\n['+linktype+'] : '
+            for l in self.get_links(linktype=linktype) :
+                s_inf += str(l) + '\t'
+        for item in self.get_data().items() :
+            s_inf += '\n'+str(item[0])+'\t'+str(item[1])
+        print ( s_inf )
+
 
 class Node ( object ) :
     def __init__ ( self ) :
@@ -128,8 +258,31 @@ class Node ( object ) :
             s_inf += '\n'+str(item[0])+'\t'+str(item[1])
         print ( s_inf )
 
+class ExtendedNode ( Node ) :
+    def __init__ ( self ) :
+        #
+        # DEV
+        # A BIOLOGICAL PHYSICS NEURON
+        # AS NODE BUT ALSO
+        #
+        self.region_      :str   = ""
+        self.strength_    :float = 0
+        self.reactivity_  :float = 0
+
+    def activation_(self,stimulus:float) -> None :
+        return ( None )
+
+    def pot_(self,stimulus:float) -> None :
+        # POTENTIATE
+        return ( None )
+
+    def dep_(self,stimulus:float) -> None :
+        # DEPRESS
+        return ( None )
+
 class NodeGraph ( Node ) :
     # https://github.com/richardtjornhammar/RichTools/commit/c4b9daa78f2a311995d142b0e74fba7c3fdbed20#diff-0b990604c2ec9ebd6f320ebe92099d46e0ab8e854c6e787fac2f208409d112d3
+
     def __init__( self ) :
         self.root_id_       = ''
         self.desc_          = "SUPPORTS DAGS :: NO STRUCTURE ASSERTION"
@@ -182,12 +335,65 @@ class NodeGraph ( Node ) :
             print ( '\n' + item[0] + '::' )
             item[1].show()
 
+
+    def unpack ( self, seq ) :
+        if isinstance ( seq,(list,tuple,set)) :
+            yield from ( x for y in seq for x in self.unpack(y) )
+        elif isinstance ( seq , dict ):
+            yield from ( x for item in seq.items() for y in item for x in self.unpack(y) )
+        else :
+            yield seq
+
+    def ltup2lstr ( self, seq:tuple ) -> tuple :
+        if isinstance ( seq,(tuple) ) :
+            yield from ( str(x) for y in seq for x in self.unpack(y) )
+
+    def assign_from_linkages_tiers( self , linkages:dict ) -> None :
+        results = sorted( [(v,k) for k,v in linkages.items()] )
+        self.assign_from_tuple_tiers ( results[-1][1] )
+        root_id_ = '.'.join(self.ltup2lstr(results[-1][1]))
+        self.set_root_id ( root_id_ )
+        graph_ = self.get_graph()
+        for item in results :
+            name_ = '.'.join( self.ltup2lstr( item[1] ) )
+            d_    = item[0]
+            node_ = graph_[name_]
+            level_= self.calculate_node_level( node_, stop_at = root_id_ )
+            node_.set_level(level_)
+            node_.set_metrics([d_])
+            node_.get_data()['distance']=d_
+
+    def assign_from_tuple_tiers( self , nid:tuple , ascendant:str=None ) -> None :
+        reformat_id = lambda id : '.'.join(list(self.ltup2lstr(id)))
+        if  isinstance ( nid,(tuple) ) :
+            n = Node()
+            cid = reformat_id(nid)
+            n .set_id( cid )
+            links = [ reformat_id(item) for item  in nid ]
+            n.add_links ( links , linktype = 'descendants' )
+            if not ascendant is None :
+                n.add_link(ascendant,linktype='ascendants')
+                links = [*links,*[ascendant]]
+            n.add_links ( links , linktype = 'links' )
+            self.add( n )
+            for item in nid :
+                self.assign_from_tuple_tiers ( item , cid )
+
     def complete_lineage ( self , identification : str ,
                            order:str    = 'depth'      ,
                            linktype:str = 'ascendants' ) -> dict :
         # 'ascendants' , 'descendants'
         root_id = identification
         results = self.search( order=order , root_id=identification , linktype=linktype )
+        results['path'] = [ idx for idx in results['path'] if not idx==identification ]
+        return ( results )
+
+    def retrieve_leaves ( self , identification : str  ,
+                           order:str    = 'depth'      ,
+                           linktype:str = 'descendants' ) -> dict :
+        root_id = identification
+        results = self.search ( order=order , root_id=identification ,
+                                linktype=linktype, bOnlyLeafNodes=True )
         results['path'] = [ idx for idx in results['path'] if not idx==identification ]
         return ( results )
 
@@ -239,6 +445,30 @@ class NodeGraph ( Node ) :
                             break
 
         return ( { 'path':path , 'order':order , 'linktype':linktype } )
+
+    def locate_value ( self, criterion:tuple , root_id:str=None , bOnlyFirst:bool=True , bHelp:bool=False, R:list=None) -> list :
+        if bHelp :
+            print ( "HELP: GRAPH.locate_value( criterion = ( 'distance', lambda x:x==0 ) , root_id = '1.3.2.4.0' , bOnlyFirst=True )" )
+            exit ( 1 )
+        if R is None :
+            R = list()
+        id = root_id
+        if root_id is None :
+            id = self.get_root_id()
+        if len(id) > 0 :
+            bCheck = criterion[1]( self.get_graph()[id].get_data()[criterion[0]] )
+            if bCheck :
+                if bOnlyFirst :
+                    return ( id )
+                else :
+                    R.append( id )
+            if not bCheck or not bOnlyFirst :
+                for child in self.get_graph()[id].get_links('descendants') :
+                    result = self.locate_value( criterion,child,bOnlyFirst,bHelp,R )
+                    if not result is None :
+                        if bOnlyFirst :
+                            return ( result )
+        return ( R )
 
     def connectivity ( self, distm:np.array , alpha:float , n_connections:int=1 , bOld:bool=True ) -> list :
         #
@@ -298,18 +528,27 @@ class NodeGraph ( Node ) :
                     break
         return ( PClist )
 
-    def linkages_to_graph_dag( self, links ) -> None :
+
+    def linkages_to_graph_dag( self, links:dict ) -> None :
+        keys = list(links.keys())
+        if isinstance ( keys[0],(tuple) ) and isinstance ( keys[-1],(tuple) ) :
+            self.assign_from_linkages_tiers ( links )
+            return
         PClist = self.linkages_to_pclist ( links )
         for pc in PClist :
             self.add_ascendant_descendant ( pc[0], pc[1] )
-        self.set_root_id(self.list_roots()[0] )
+            self.get_graph()[pc[0]].get_data()['analyte ids'] = [int(a) for a in pc[0].split('.')]
+            self.get_graph()[pc[1]].get_data()['analyte ids'] = [int(a) for a in pc[1].split('.')]
+        for k,v in links.items():
+            self.get_graph()[k].set_metrics([v])
+        root_ = self.list_roots()[0]
+        self.set_root_id( root_ )
 
 
     def distance_matrix_to_pclist ( self , distm:np.array ,
                                     cluster_connections:int = 1 ,
                                     hierarchy_connections:int = 1 ,
-                                    bNonRedundant:bool = True ,
-                                    linkage_approximation:str = None ) -> list :
+                                    bNonRedundant:bool = True  ) -> list :
         #
         # FASTER PCLIST CONSTRUCTION ROUTINE
         # RETURNS LIST USEFUL FOR HIERARCHY GENERATION
@@ -319,29 +558,10 @@ class NodeGraph ( Node ) :
         if not bNonRedundant :
             logic = lambda p,c : len(p&c) >= hierarchy_connections
         #
-        nm = np.shape(distm)
-        if not len ( nm ) == 2 :
-            print ( "DISTANCE MATRIX MUST BE A SQUAREFORM MATRIX" )
-            exit(1)
-        if not nm[0] == nm[1]:
-            print ( "DISTANCE MATRIX MUST BE A SQUAREFORM MATRIX" )
-            exit(1)
-
-        if linkage_approximation is None:
-            R = sorted( list(set( distm.reshape(-1) ) ) )
-        else : # LINKAGE MATRIX TO PCLIST
-            # TEMP. COMPARISON SAIGA CODE
-            from graphtastic.clustering import linkage
-            LINKS = linkage ( distm, command=linkage_approximation )
-            epsilon = 1E-6
-            R = [ epsilon + r for r in LINKS.values() ]
-            R .append ( epsilon )
-            R = sorted( list( set( R ) ) )
-
+        R = sorted( list(set( distm.reshape(-1) ) ) )
         prev_clusters = []
         PClist = []
         for r in R :
-            # NOTE: THE LOCAL ROUTINE
             present_clusters = self.connectivity ( distm , r , cluster_connections )
             parent_child  = [ (p,c,r) for c in prev_clusters for p in present_clusters \
                           if logic(p,c)  ]
@@ -349,16 +569,13 @@ class NodeGraph ( Node ) :
             PClist = [ *PClist, *parent_child ]
         return ( PClist )
 
-    def distance_matrix_to_absolute_coordinates ( self , D:np.array , bSquared:bool = False, n_dimensions:int=2 , bLocal:bool=True ) -> np.array :
+
+    def distance_matrix_to_absolute_coordinates ( self , D:np.array , bSquared:bool = False, n_dimensions:int=2 ) -> np.array :
         #
         # SAME AS IN THE IMPETUOUS cluster.py EXCEPT THE RETURN IS TRANSPOSED
         # AND distg.m IN THE RICHTOOLS REPO
         # C++ VERSION HERE https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
         #
-        if not bLocal : # JITTED VERSION
-            from graphtastic.fit import distance_matrix_to_absolute_coordinates as distm2coords
-            return ( distm2coords ( D , bSquared = bSquared, n_dimensions=n_dimensions ) )
-
         if not bSquared :
             D = D**2.
         DIM = n_dimensions
@@ -374,13 +591,92 @@ class NodeGraph ( Node ) :
         xr = np.dot( Z.T,Vt )
         return ( xr.T )
 
-    def distance_matrix_to_graph_dag ( self , distm:np.array ,
-                                       n_:int = 1 , bVerbose:bool = False ,
-                                       names:list = None ,
-                                       linkage_approximation:str = None ) -> None :
+    def calculate_adjacency_matrix( self , bSparse:bool    = False ,
+                                    analyte_identifier:str = None  ,
+                                    analyte_adjacency_level:int = None,
+                                    linktypes:list[str] = [ 'ascendants' , 'descendants' ] ) -> dict :
+        #
+        # IF ANALYTE IDENTIFIER IS PASSED THEN CONSTRUCT THE
+        # ANALYTE ADJACENCY MATRIX AT A SPECIFIED LEVEL
+        # NOTE THAT YOU CAN GET THE ADJACENCY MATRIX FOR ALL
+        # ANALYTES VIA : distance_matrix:np.array, level_cutoff:float
+        # adj_matrix = distance_matrix<=level_cutoff - np.eye(len(distance_matrix))
+        #
+        # DEFAULT: CONSTRUCT NODE TO NODE (CLUSTERS) LINK ADJACENCY MATRIX
+        #          WE DONT ENFORCE SYMMETRY
+        #
+        graph = self.get_graph()
+        if analyte_identifier is None or analyte_adjacency_level is None :
+            names  = list(self.keys())
+            Nn     = len(names)
+            lookup = {n:i for n,i in zip(names,range(Nn)) }
+            if bSparse :
+                amat = dict()
+            else :
+                amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
+            for name in names :
+                for linktype in linktypes:
+                    for link in graph[name].get_links(linktype) :
+                        i = lookup[name]
+                        j = lookup[link]
+                        if i == j :
+                            continue
+                        if linktype == 'ascendants':
+                            amat[j,i] = 1
+                        if linktype == 'descendants':
+                            amat[i,j] = 1
+                        if linktype == 'links':
+                            amat[j,i] = 1
+                            amat[i,j] = 1
+        else :
+            level = analyte_adjacency_level
+            root_data = graph[ self.get_root_id() ].get_data()
+            if analyte_identifier in root_data :
+                names = root_data[ analyte_identifier ]
+            else :
+                print ( 'ERROR COULD NOT FIND GLOBAL IDENTIFIER INFORMATION:' , analyte_identifier )
+                exit (1)
+            Nn = len( names )
+            nnames = list(self.keys())
+            lookup = { a:i for a,i in zip(names,range(Nn)) }
+            if bSparse :
+                amat = dict()
+            else :
+                amat = np.zeros(Nn*Nn).reshape(Nn,Nn)
+            for name in nnames :
+                for linktype in linktypes :
+                    for link in graph[name].get_links(linktype) :
+                        i_names = graph[ name ].get_data()[ analyte_identifier ]
+                        j_names = graph[ link ].get_data()[ analyte_identifier ]
+                        if (graph[ link ].level()==level or graph[name].level()==level) or level<0 :
+                            for namei in i_names :
+                                for namej in j_names :
+                                    i = lookup [ namei ]
+                                    j = lookup [ namej ]
+                                    if i == j :
+                                        continue
+                                    if linktype == 'ascendants':
+                                        amat[j,i] = 1
+                                    if linktype == 'descendants':
+                                        amat[i,j] = 1
+                                    if linktype == 'links':
+                                        amat[j,i] = 1
+                                        amat[i,j] = 1
+        self.adjacency_matrix_ = { 'adjacency matrix':amat , 'index names':names , 'sparsity':bSparse }
+        return ( self.adjacency_matrix_ )
+
+    def retrieve_adjacency_matrix( self , bForceRecalculate:bool=False ) -> dict :
+        if self.adjacency_matrix_ is None or ( not self.adjacency_matrix_ is None and bForceRecalculate ) :
+            amat_d = self.calculate_adjacency_matrix()
+            self.adjacency_matrix_  = amat_d
+        else :
+            amat_d = self.adjacency_matrix_
+        return ( amat_d )
+
+    def distance_matrix_to_graph_dag ( self , distm:np.array , n_:int=1 , bVerbose:bool=False , names:list=None ) -> None :
         #
         # CONSTRUCTS THE HIERACHY FROM A DISTANCE MATRIX
-        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THE IMPETUOUS REPO
+        # SIMILAR TO THE ROUTINES IN hierarchical.py IN THIS IMPETUOUS REPO
         #
         if len ( distm.shape ) < 2 :
             print ( 'PLEASE SUBMIT A SQUARE DISTANCE MATRIX' )
@@ -393,19 +689,20 @@ class NodeGraph ( Node ) :
             if len ( names ) == m_ :
                 for I,N in zip(range(len(names)),names):
                     lookup[I] = N
-        pclist = self.distance_matrix_to_pclist( distm , linkage_approximation = linkage_approximation )
+        pclist = self.distance_matrix_to_pclist( distm )
         for pc_ in pclist :
             lpc0 = [ lookup[l] for l in list(pc_[0]) ]
             lpc1 = [ lookup[l] for l in list(pc_[1]) ]
-            asc = str(lpc0)
-            des = str(lpc1)
+            asc = '.'.join([str(l) for l in lpc0])
+            des = '.'.join([str(l) for l in lpc1])
             asc_met = pc_[2]
             self.add_ascendant_descendant(asc,des)
-            self.get_graph()[asc].set_metrics([asc_met])
+            if len( self.get_graph()[asc].get_metrics() ) < 1 :
+                self.get_graph()[asc].set_metrics([asc_met])
             self.get_graph()[asc].get_data()['analyte ids'] = lpc0
             self.get_graph()[des].get_data()['analyte ids'] = lpc1
         for key in self.keys() :
-            if self.get_graph()[key].can_it_be_root(n_):
+            if self.get_graph()[key].is_a_root(n_):
                 self.set_root_id ( key )
         if bVerbose :
             self.show()
@@ -441,6 +738,35 @@ class NodeGraph ( Node ) :
         approximate_distm *= 1-np.eye(m_)
         return ( np.abs(approximate_distm) , lookup )
 
+    def assign_graph_from_adjacency_matrix ( self , adj_matrix:np.array , names:list[str] = None ) -> None :
+        bAssignIDs = False
+        if len ( adj_matrix ) == len ( set(names) ) :
+            bAssignIDs = True
+        def set_name(i:int,names:list[str],bSet:bool)->str:
+            if bSet:
+                return(names[i])
+            else:
+                return(str(i))
+        for i in range(len(adj_matrix)) :
+            n = Node()
+            name = set_name(i,names,bAssignIDs)
+            n.set_id(name)
+            desc = []
+            ascs = []
+            d_adjv = adj_matrix[i,:]
+            a_adjv = adj_matrix[:,i]
+            for j in range(len(d_adjv)) :
+                if i == j :
+                    continue
+                if d_adjv[j] == 1 :
+                    desc.append(set_name(j,names,bAssignIDs))
+                if a_adjv[j] == 1 :
+                    ascs.append(set_name(j,names,bAssignIDs))
+            n.add_links(list(set(desc)),linktype='descendants' )
+            n.add_links(list(set(ascs)),linktype='ascendants' )
+            n.add_links(list(set(desc)|set(ascs)),linktype='links' )
+            self.add(n)
+
     def add_ascendant_descendant ( self, ascendant:str, descendant:str ) -> None :
         n = Node()
         n.set_id(ascendant)
@@ -462,6 +788,27 @@ class NodeGraph ( Node ) :
         descendants = [ ( idx , set( self.complete_lineage( idx,linktype='descendants')['path'] ) ) for idx in all_names ]
         ancestors   = [ ( idx , set( self.complete_lineage( idx,linktype='ascendants' )['path'] ) ) for idx in all_names ]
         return ( ancestors , descendants )
+
+    def degrees ( self , bMyopic=True ) -> dict :
+        #
+        # DELIVER ALL NODE DEGREES OR DIRECTED NODE GRAPH DEGREES
+        all_names = self.keys()
+        graph     = self.get_graph()
+        degree_d  = dict()
+        for idx in all_names :
+            node_   = graph[ idx ]
+            n_desc  = node_.degree('descendants')
+            n_asc   = node_.degree('ascendants')
+            n_links = node_.degree('links')
+            degree_d[idx]   = {'descendants':n_desc,'ascendants':n_asc,'links':n_links} # LOCAL MYOPIC
+            #
+            # IF DIRECTED
+            if not bMyopic :
+                all_descendants = set( self.complete_lineage( idx,linktype='descendants')['path'] )
+                all_ancestors   = set( self.complete_lineage( idx,linktype='ascendants' )['path'] )
+                degree_d[idx]['all ascendants']  = [len(all_ancestors)   , all_ancestors   ]
+                degree_d[idx]['all descendants'] = [len(all_descendants) , all_descendants ]
+        return ( degree_d )
 
     def ascendant_descendant_file_to_dag ( self, relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
@@ -533,7 +880,15 @@ class NodeGraph ( Node ) :
         outp = outp + tail_string
         return ( outp,I )
 
-    def write_json ( self , jsonfile:str = 'rtree.json', bCalcLevel:bool = True ,
+    def rename_data_field_values ( self, lookup:dict = None , field_name:str = 'analyte ids' ) -> None :
+        if lookup is None :
+            return
+        for item in self.items() :
+            igdfnl = item[1].get_data()[field_name]
+            self.get_graph()[item[0]].get_data()[field_name] =\
+                [ n if not n in lookup else lookup[n] for n in igdfnl ]
+
+    def write_json ( self , jsonfile:str = None, bCalcLevel:bool = True ,
                      linktype:str = 'descendants', root_id:str = None ) -> str :
         I:int = 1
         if root_id is None :
@@ -544,10 +899,52 @@ class NodeGraph ( Node ) :
         json_data_txt,I = self.hprint( node, visited,
                                        linktype   = linktype,
                                        bCalcLevel = bCalcLevel )
-        of_ = open(jsonfile,'w')
-        print ( json_data_txt,file=of_ )
-        return( json_data_txt )
+        if not jsonfile is None :
+            of_ = open(jsonfile,'w')
+            print ( json_data_txt,file=of_ )
+        return ( json_data_txt )
 
+    def write_gmt ( self, gmtfile:str = None ) -> str :
+        gmt_data_txt = "#GROUPNAME\tPARENT:DESC:LVL:MET\tANALYTE1\tANALYTE2\t...\n"
+        for item in self.items() :
+            asc = ':'.join(item[1].get_links('ascendants'))
+            gmt_line = item[0] + '\t' + asc + ':' + str(item[1].description()) + \
+                    ':' + str(item[1].level()) + ':' + \
+                    ' '.join([str(i) for i in item[1].get_metrics()]) + '\t' + \
+                    '\t'.join([str(i) for i in item[1].get_data()['analyte ids']]) + '\n'
+            gmt_data_txt = gmt_data_txt + gmt_line
+
+        if not gmtfile is None:
+            of_ = open ( gmtfile , 'w' )
+            print ( gmt_data_txt , file=of_)
+        return ( gmt_data_txt )
+
+    def collect_linkages ( self ) -> dict :
+        #
+        links = dict()
+        for item in self.items() :
+            if True :
+                a_ = 0
+                if len( str(item[1].level()) )>0 :
+                    a_ = item[1].level()
+                mets = item[1].get_metrics()
+                if len( mets ) > 0 :
+                    a_ = mets[0]
+                links[item[0]] = a_
+        return ( links )
+
+    def write_linkages ( self , linkfile:str=None ) -> str :
+        #
+        links_ = [ "\"cluster\":"+str(k) + ", \"metric\":" + str(v) for k,v in self.collect_linkages().items() ]
+        linkages_txt = '['+']\n['.join(links_)+'] '
+        #
+        # DEV
+        if not linkfile is None:
+            of_ = open(linkfile,'w')
+            print ( linkages_txt ,file=of_)
+        return ( linkages_txt )
+
+    
 def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
                                   i_a:int = 0 , i_d:int = 1 ,
                                   identifier:str = None , sep:str = '\t' ) -> NodeGraph :
@@ -557,27 +954,14 @@ def ascendant_descendant_to_dag ( relationship_file:str = './PCLIST.txt' ,
 
     return ( RichTree , ancestors , descendants )
 
+
 def write_tree( tree:NodeGraph , outfile='tree.json', bVerbose=True ):
     if bVerbose:
         print ( 'YOU CAN CALL THE NodeGraph METHOD tree.write_json() FUNCTION DIRECTLY' )
     o_json = tree.write_json( outfile )
     return ( o_json )
 
-def add_attributes_to_tree ( p_df , tree ):
-    add_attributes_to_node_graph ( p_df , tree )
-    return ( tree )
-
-def parent_child_to_dag ( relationship_file:str = './PCLIST.txt' ,
-             i_p:int = 0 , i_c:int = 1 , identifier:str = None ) :
-
-    return ( ascendant_descendant_to_dag ( relationship_file = relationship_file,
-                                      i_a = i_p , i_d = i_c , identifier=identifier ) )
 
 def value_equalisation( X:np.array , method:str='average' ) -> np.array :
     X_ = (rankdata( X , method=method )-0.5)/len(set(X))
     return ( X_ )
-
-
-
-if __name__ == '__main__' :
-    contributions__ = { "Richard Tjörnhammar": "All methods" }
