@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "graphtastic",
-    version = "0.11.5",
+    version = "0.11.6",
     author = "Richard Tjörnhammar",
     author_email = "richard.tjornhammar@gmail.com",
     description = "Graphtastic, a Graph Learning library for Humans",
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type = "text/markdown",
     url = "https://github.com/richardtjornhammar/graphtastic",
     packages = setuptools.find_packages('src'),
-    package_dir = {'graphtastic':'src/graphtastic','graphs':'src/graphs','convert':'src/convert','clustering':'src/clustering','fit':'src/fit'},
+    package_dir = {'graphtastic':'src/graphtastic','graphs':'src/graphs','convert':'src/convert','clustering':'src/clustering','fit':'src/fit','hierarchical':'src/hierarchical','utility':'src/utility'},
     classifiers = [
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
