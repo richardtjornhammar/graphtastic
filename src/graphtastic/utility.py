@@ -161,7 +161,7 @@ def z2error ( model_data:np.array , evidence_data:np.array , evidence_uncertaint
     cer = coserr(Fe,Fs)
     qer = z2e/cer
 
-    return ( {'qerr'. qer , 'z2e': z2e , 'cer': cer ,'N':N } )
+    return ( {'qerr': qer , 'z2e': z2e , 'cer': cer ,'N':N } )
 
 import math
 def isItPrime( N:int , M:int=None,p:int=None,lM05:float=None )->bool :
