@@ -64,6 +64,8 @@ import graphtastic.graphs as gg
 import graphtastic.clustering as gl
 import graphtastic.fit as gf
 import graphtastic.convert as gc
+import graphtastic.utility as gu
+import graphtastic.stats as gs
 ```
 Should work if the install was succesful
 
@@ -142,12 +144,12 @@ from graphtastic.fit import absolute_coordinates_to_distance_matrix
 
 N   = 100
 N05 = int ( np.floor(0.5*N) )
-R   = 0.25*np.random.randn(N).reshape(N05,2) + 1.5
-P   = 0.50*np.random.randn(N).reshape(N05,2)
+P   = 0.25*np.random.randn(N).reshape(N05,2) + 1.5
+Q   = 0.50*np.random.randn(N).reshape(N05,2)
 
-coordinates = np.array([*P,*R])
+coordinates = np.array([*P,*Q])
 
-results = dbscan ( distance_matrix = absolute_coordinates_to_distance_matrix(coordinates,bInvPow=True) , eps=0.45 , minPts=4 )
+results = dbscan ( distance_matrix = absolute_coordinates_to_distance_matrix(coordinates) , eps=0.45 , minPts=4 )
 clusters = reformat_dbscan_results(results)
 print ( clusters )
 
@@ -209,10 +211,7 @@ if __name__=='__main__':
     import graphtastic.fit as gf
     GN = gg.NodeGraph()
     #
-    # bInvPow refers to the distance type. If True then R distances are returned
-    # instead of R2 (R**2) distances. That is also computing the square root if True
-    #
-    distm = gf.absolute_coordinates_to_distance_matrix( coordinates , bInvPow=True )
+    distm = gf.absolute_coordinates_to_distance_matrix( coordinates )
     #
     # Now a Graph DAG is constructed from the pairwise distances
     GN.distance_matrix_to_graph_dag( distm )
@@ -235,15 +234,15 @@ import typing
 if __name__=='__main__' :
 
     import time
-    from graphtastic.clustering import linkage
+    from graphtastic.hierarchical import linkages
 
     D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
     print ( np.array(D) )
     t0 = time.time()
-    links = linkage( D, command='min')
+    links = linkages( D, command='min')
     dt = time.time()-t0
-    print ('min>', linkage( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
-    print ('max>', linkage( D, command='max') )     # COMPLETE LINKAGE
+    print ('min>', linkages( D, command='min') , dt) # SINGLE LINKAGE (MORE ACCURATE)
+    print ('max>', linkages( D, command='max') )     # COMPLETE LINKAGE
 
     import graphtastic.fit as gf
     import graphtastic.graphs as gg
