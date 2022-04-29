@@ -178,13 +178,16 @@ class Pvalues ( object ) :
 
 import scipy.stats as st
 def group_significance (  GroupAnalytes:list[str] , SigAnalytes:list[str] ,
-                          AllAnalytes:list[str]   , alternative = 'two-sided' ) :
+                          AllAnalytes:list[str]   , alternative:str = 'two-sided' ) :
     # FISHER ODDS RATIO CHECK
     # CHECK FOR ALTERNATIVE :
     #   'greater'   ( ENRICHMENT IN GROUP )
     #   'two-sided' ( DIFFERENTIAL GROUP EXPERSSION )
     #   'less'      ( DEPLETION IN GROUP )
-    Analytes       = set(subset.index.values)
+    SigAnalytes    = set(SigAnalytes)
+    AllAnalytes    = set(AllAnalytes)
+    Analytes       = set(GroupAnalytes)
+
     notAnalytes    = AllAnalytes - Analytes
     notSigAnalytes = AllAnalytes - SigAnalytes
     AB  = len(Analytes&SigAnalytes)    ; nAB  = len(notAnalytes&SigAnalytes)
