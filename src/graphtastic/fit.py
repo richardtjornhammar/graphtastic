@@ -55,11 +55,68 @@ else :
         else :
             return ( R2 )
 
-def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bInvPow:bool=False ) -> np.array :
-    DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
-    if bInvPow:
-        DP = DP**(1.0/power)
-    return ( DP )
+class Quaternion ( ) :
+    def __init__ ( self , vector=None , angle=None ):
+        self.bComplete = False
+        self.v         = vector
+        self.angle     = angle
+        self.q         = np.array([0.,0.,0.,0.])
+        self.qrot      = None
+        self.assign_quaternion()
+
+    def __eq__  ( self , other ) :
+        return ( True )
+
+    def __str__ ( self ) :
+        return ( self.info() )
+
+    def __repr__( self ) :
+        return ( self.info() )
+
+    def info( self ):
+        desc__= """< quaternion > instance at address [ """ + hex(id(self)) + """ ]\n""" + \
+                """  quaternion > """ + ', '.join( [ str(v_) for v_ in self.q ] ) + \
+                """ \n  | angle  = """ + str ( self.angle ) + \
+                """ \n  | vector = """ + ', '.join( [ str(v_) for v_ in self.v ] )
+        return ( desc__ )
+
+    def get( self ) :
+        return ( [ self.U, self.S, self.VT ] )
+
+    def assign_quaternion (self ,  v=None , angle=None ):
+        if v is None :
+            v = self.v
+        else :
+            self.v = v
+        if angle is None :
+            angle = self.angle
+        else :
+            self.angle = angle
+        if angle is None or v is None :
+            self.bComplete = False
+            return
+        else :
+            self.bComplete = True
+        fi = angle*0.5
+        norm = 1.0 / np.sqrt( np.sum( v**2 ) )
+        self.q[0] = np.cos(fi)
+        self.q[1] = v[0]*norm*np.sin(fi)
+        self.q[2] = v[1]*norm*np.sin(fi)
+        self.q[3] = v[2]*norm*np.sin(fi)
+        self.calc_rotation_matrix()
+
+    def calc_rotation_matrix(self):
+        if self.bComplete :
+            q = self.q
+            self.qrot = np.array( [ [ q[0]*q[0]+q[1]*q[1]-q[2]*q[2]-q[3]*q[3] , 2*q[1]*q[2] - 2*q[0]*q[3] , 2*q[1]*q[3] + 2*q[0]*q[2] ] ,
+                                    [ 2*q[1]*q[2] + 2*q[0]*q[3] , q[0]*q[0]-q[1]*q[1] + q[2]*q[2]-q[3]*q[3] , 2*q[2]*q[3]-2*q[0]*q[1] ] ,
+                                    [ 2*q[1]*q[3] - 2*q[0]*q[2] , 2*q[2]*q[3] + 2*q[0]*q[1] , q[0]*q[0]-q[1]*q[1]-q[2]*q[2]+q[3]*q[3] ] ] )
+    def rotate_coord (self, x ) :
+        if self.bComplete :
+            return ( np.dot(self.qrot,x) )
+
+from scipy.spatial.distance import squareform , pdist
+absolute_coordinates_to_distance_matrix = lambda Q:squareform(pdist(Q))
 
 distance_matrix_to_geometry_conversion_notes__ = """
 *) TAKE NOTE THAT THE OLD ALGORITHM CALLED DISTANCE GEOMETRY EXISTS. IT CAN BE EMPLOYED TO ANY DIMENSIONAL DATA. HERE YOU FIND A SVD BASED VERSION
@@ -68,7 +125,7 @@ distance_matrix_to_geometry_conversion_notes__ = """
 
 if bUseNumba :
         @jit(nopython=True)
-        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions:int = 2 , power:int=2 )->np.array :
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = False , n_dimensions:int = 2 , power:int=2 ) -> np.array :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**power
@@ -85,7 +142,7 @@ if bUseNumba :
                 xr = np.dot( Z.T,Vt )
                 return ( xr.T )
 else :
-        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = True , n_dimensions = 2 , power:int = 2 ) -> np.array :
+        def distance_matrix_to_absolute_coordinates ( D:np.array , bSquared:bool = False , n_dimensions:int = 2 , power:int = 2 ) -> np.array :
                 # C++ https://github.com/richardtjornhammar/RichTools/commit/be0c4dfa8f61915b0701561e39ca906a9a2e0bae
                 if not bSquared :
                         D = D**power
@@ -171,7 +228,7 @@ def score_alignment ( string_list:list[str] ,
             SL.append(Sma_)
     return ( Smax/(2*sha+1)/(n+m)*mn )
 
-def kabsch_alignment( P:np.array,Q:np.array )->np.array :
+def kabsch_alignment( P:np.array,Q:np.array ) -> np.array :
     #
     # https://en.wikipedia.org/wiki/Kabsch_algorithm
     # C++ VERSION: https://github.com/richardtjornhammar/RichTools/blob/master/src/richfit.cc
@@ -280,9 +337,13 @@ def high_dimensional_alignment ( P:np.array , Q:np.array ) -> np.array :
     if DIM > N :
         print ( 'MALFORMED COORDINATE PROBLEM' )
         exit ( 1 )
-    #
-    DP = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in P for q in P ] ) .reshape( N,N )
-    DQ = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in Q for q in Q ] ) .reshape( M,M )
+
+    if bPdist :
+        DP = absolute_coordinates_to_distance_matrix( P )
+        DQ = absolute_coordinates_to_distance_matrix( Q )
+    else :
+        DP = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in P for q in P ] ) .reshape( N,N )
+        DQ = np.array( [ np.sqrt(np.sum((p-q)**2)) for p in Q for q in Q ] ) .reshape( M,M )
     #
     PX = distance_matrix_to_absolute_coordinates ( DP , n_dimensions = DIM )
     QX = distance_matrix_to_absolute_coordinates ( DQ , n_dimensions = DIM )
