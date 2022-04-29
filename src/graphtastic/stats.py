@@ -194,3 +194,26 @@ def group_significance (  GroupAnalytes:list[str] , SigAnalytes:list[str] ,
     AnB = len(Analytes&notSigAnalytes) ; nAnB = len(notAnalytes&notSigAnalytes)
     oddsratio , pval = st.fisher_exact([[AB, nAB], [AnB, nAnB]], alternative=alternative )
     return ( pval , oddsratio )      
+
+from scipy.stats import rankdata
+def quantify_density_probability ( rpoints:np.array , bMore:bool=False ) :
+    # USING NORMAL DISTRIBUTION
+    # DETERMINE P VALUES
+    loc_pdf = lambda X,mean,variance : [ 1./np.sqrt(2.*np.pi*variance)*np.exp(-((x-mean)/(2.*variance))**2) for x in X ]
+    from scipy.special import erf as erf_
+    loc_cdf = lambda X,mean,variance : [      0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+    loc_Q   = lambda X,mean,variance : [ 1. - 0.5*( 1. + erf_(  (x-mean)/np.sqrt( 2.*variance ) ) ) for x in X ]
+    M_,Var_ = np.mean(rpoints),np.std(rpoints)**2
+    #
+    # INSTEAD OF THE PROBABILTY DENSITY WE RETURN THE FRACTIONAL RANKS
+    # SINCE THIS ALLOWS US TO CALCULATE RANK STATISTICS FOR A PROJECTION
+    n = len(set(rpoints)) 
+    corresponding_density = (rankdata (rpoints,'average') -0.5) / n
+    corresponding_pvalue  = loc_Q  ( rpoints,M_,Var_ )
+    if bMore:
+        cor_pdf = loc_pdf  ( rpoints,M_,Var_ )
+        cor_cdf = loc_cdf  ( rpoints,M_,Var_ )
+    #
+    if bMore:
+        return ( corresponding_pvalue , corresponding_density , cor_pdf , cor_cdf )
+    return ( corresponding_pvalue , corresponding_density )
