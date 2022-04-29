@@ -245,3 +245,208 @@ def nppop(A:np.array, irow:int=None, jcol:int=None ) -> list[np.array] :
         A    = np.delete(A,range(jcol,len(A.reshape(-1)),N) )
         M1   = M1-1
     return ( [rrow,rcol,A.reshape(M0,M1)] )
+
+# Numerical Analysis by Burden and Faires
+# GOLUBS SVD PAPER
+#
+def kth_householder ( A:np.array , k:np.array ) :
+    # THE K:TH HOUSHOLDER ITERATION
+    A  = np .array( A )
+    n_ , m_ = np .shape(A)
+    if n_ < 2 :
+        return ( A )
+    k0 = k
+    k1 = k+1
+
+    alpha = ( 2*(A[k1][k0]<0)-1 )
+    alpha = alpha * np.sqrt( sum([ a**2 for a in A.T[k0][k1:] ]) )
+    r  = np.sqrt ( 0.5*(alpha**2-A[k1][k0]*alpha) )
+    v_ = [ 0 for z in range(k1) ] ; v_ .append( (A[k1][k0]-alpha)*0.5/r )
+    [ v_ .append ( (0.5/r) * A[j][k0] ) for j in range(k1+1,n_) ]
+    v_ = np.array( v_ )
+    Pk = np.eye( n_ ) - 2*np.array( [ v*w for v in v_ for w in v_ ] ).reshape(n_,n_)
+    Qk = Pk
+
+    if n_ != m_ :
+        alpha = ( 2*(A[k0][k1]<0)-1 )
+        alpha = alpha * np.sqrt( sum([ a**2 for a in A[k0][k1:] ]) )
+        r  = np.sqrt ( 0.5*(alpha**2-A[k0][k1]*alpha) )
+        w_ = [ 0 for z in range(k1) ] ; w_ .append( (A[k0][k1]-alpha)*0.5/r )
+        [ w_ .append ( (0.5/r) * A[k0][j] ) for j in range(k1+1,m_) ]
+        w_ = np.array( w_ )
+        Qk = np.eye( m_ ) - 2*np.array( [ v*w for v in w_ for w in w_ ] ).reshape(m_,m_)
+
+    Ak = np.dot( np.dot( Pk,A ),Qk )
+    return ( Pk,Ak,Qk )
+
+
+def householder_reduction ( A:np.array ) :
+    A = np.array( A )
+    n = np.min( np.shape( A ) )
+    if n < 2 :
+        return ( A )
+    P0 , A0 , Q0 = kth_householder( A,k=0 )
+    if n==2 :
+        return ( P0 , A0 , Q0.T )
+    for k in range( 1 , n-1 ) : # ends at n-2
+        P1 , A1 , Q1 = kth_householder( A0,k=k )
+        A0 = A1
+        P0 = np.dot( P0 , P1 )
+        Q0 = np.dot( Q0 , Q1 )
+    U  = P0
+    S  = A1
+    VT = Q0.T
+    return ( U , S , VT )
+
+
+def rich_rot ( a:float , b:float ) :
+    if a==0 and b==0 :
+        c = 0
+        s = 0
+        r = 0
+    else :
+        r = np.sqrt( a*a + b*b )
+        if a == 0 :
+            s = r / b
+            c = 0
+        else :
+            s = b / r
+            c = ( r - s*b ) / a
+    return ( c , s , r )
+
+
+def diagonalize_2b2( A:np.array , tol:float = 1E-13 , maxiter:int = 100 ) :
+    M   = A[:2,:2].copy()
+    M0  = A[:2,:2].copy()
+    k   = 0
+    ERR = 1
+    G_  = None
+    H_  = None
+    for k in range( maxiter ) :
+        # LEFT
+        c,s,r = rich_rot( M0[0,0],M0[1,0])
+        G0    = np.array( [[c,s],[-s,c]] )
+        M     = np.dot( G0 , M0 )
+        # RIGHT
+        M     = M.T
+        c,s,r = rich_rot( M[0,0],M[1,0])
+        H0    = np.array( [[c,s],[-s,c]] )
+        M     = np.dot( H0 , M )
+        # BUILD
+        M0    = M.T
+        ERR   = np.sqrt( M0[1,0]**2+M0[0,1]**2 )
+        if G_ is None :
+            G_ = G0
+        else :
+            G_ = np.dot(G0,G_)
+        if H_ is None :
+            H_ = H0
+        else :
+            H_ = np.dot(H0,H_)
+        if ERR < tol :
+            break
+    return ( G_ , M0 , H_ )
+
+def diagonalize_tridiagonal ( tridiagonal:np.array ,
+            maxiter:int = 1000 ,
+            tol:float   = 1E-16 ) :
+
+        S       = tridiagonal.copy()
+        n_ , m_ = np.shape( S )
+        tol22   = tol*0.1
+        maxi22  = int( np.ceil( maxiter*0.1 ))
+
+        sI = skew_eye ( [ n_ , n_ ] )
+        tI = skew_eye ( [ m_ , m_ ] )
+        zI = skew_eye ( np.shape(S) )
+        GI = sI.copy()
+        HI = tI.copy()
+        #
+        sI_   = sI.copy()
+        tI_   = tI.copy()
+        shape = np.shape(S)
+        nm_   = shape[0] if (shape[0]<=shape[1]) else shape[1] - 1
+
+        for k in range ( maxiter ) :
+            for i in range ( nm_ ) :
+                sI_   = sI .copy()
+                tI_   = tI .copy()
+                A     = S[ i:i+2 , i:i+2 ].copy()
+                G , Z , H = diagonalize_2b2 ( A , tol=tol22 , maxiter=maxi22 )
+                sI_[ i:i+2 , i:i+2 ] = G
+                GI = np.dot( sI_ , GI )
+                tI_[ i:i+2 , i:i+2 ] = H
+                HI = np.dot( tI_ , HI )
+                S =  np.dot( np.dot( sI_ , S ) , tI_.T )
+                for ir in range( 2,nm_+1-i ):
+                    ii  = i
+                    jj  = i+ir
+                    idx = [ (ii,ii),(ii,jj),(jj,ii),(jj,jj) ]
+                    jdx = [ (0,0),(0,1),(1,0),(1,1) ]
+                    A   = np.array( [ S[i] for i in idx] ).reshape(2,2)
+                    G , Z , H = diagonalize_2b2 ( A , tol=tol22 , maxiter=maxi22 )
+                    sI_ = sI .copy()
+                    tI_ = tI .copy()
+                    H = H.T
+                    for i_,j_ in zip(idx,jdx) :
+                        sI_[i_] = G[j_]
+                        tI_[i_] = H[j_]
+                    tI_= tI_.T
+                    GI = np.dot( sI_ , GI )
+                    HI = np.dot( tI_ , HI )
+                    S =  np.dot( np.dot( sI_ , S ) , tI_.T )
+            #ERR = np.sum( S**2*(1-skew_eye([n_,m_]) ) )
+            ERR = sum( np.diag(S[:nm_],-1)**2 ) + sum( np.diag(S[:nm_] ,1)**2 )
+            if ERR < tol :
+                break;
+        # RETURNS THE MATRICES NEEDED TO CREATE THE INPUT DATA
+        # WHERE R[1] IS THE SINGULAR VALUE VECTOR
+        # DATA = np.dot( np.dot( R[0],R[1]),R[2] )
+        return ( GI.T , S , HI )
+
+
+def anSVD ( A:np.array , maxiter=1000 , tol=1E-30 ):
+    P , Z , QT = householder_reduction( A )
+    G , S , HT = diagonalize_tridiagonal( Z , maxiter=maxiter , tol=tol )
+    U  = np.dot(P,G)
+    VT = np.dot(HT,QT)
+    return ( U,S,VT )
+
+
+def seqdot( B:np.array ) :
+    if len(B)  > 2 :
+        return ( np.dot( B[0] , seqdot( B[1:] ) ) )
+    if len(B)  > 1 :
+        return ( np.dot( B[0] , B[1] ) )
+    return ( B[0] )
+
+
+def eigensolve_2b2 ( M:np.array ) :
+    # MOHRS LILLA OLLE I SKOGEN GICK ...
+    s1      = M[0,0]
+    s2      = M[1,1]
+
+    tau2    = M[1,0] * M[0,1]
+    delta   = M[0,0] - M[1,1]
+    phi     = M[0,0] + M[1,1]
+
+    xi      = np.sqrt( delta**2+4*tau2 )
+    lambda0 = 0.5*( phi + xi )
+    lambda1 = 0.5*( phi - xi )
+    tau01   = M[0,1]
+    tau10   = M[1,0]
+
+    def transf ( tau, delta, xi , pm=1 ) :
+        nom0 = 0.5 * ( delta + pm*xi )/tau
+        nom1 = 1
+        c,s  = nom0 , nom1
+        norm = np.sqrt(c*c+s*s)
+        c    = c / norm
+        s    = s / norm
+        return ( np.array([[c,s],[s,-c]]) )
+
+    e10p = transf ( tau=tau10 , delta=delta , xi=xi , pm =  1 )
+    e10m = transf ( tau=tau10 , delta=delta , xi=xi , pm = -1 )
+
+    return ( np.array([lambda0,lambda1]),e10p[0],e10m[0] )
+
