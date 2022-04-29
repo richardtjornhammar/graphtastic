@@ -252,7 +252,171 @@ if __name__=='__main__' :
     GN .write_json( jsonfile='./graph_hierarchy.json' )
 
 ```
-NOITE : This new implementation of agglomerative hierarchical clustering differs from the one present in `scipy`
+NOTE : This new implementation of agglomerative hierarchical clustering differs from the one present in `scipy`
+
+
+# Example 5 : Connectivity, hierarchies and linkages
+
+In the `impetuous.clustering` module you will find several codes for assessing if distance matrices are connected at some distance or not. `connectivity` and `connectedness` are two methods for establishing the number of clusters in the binary Neighbour matrix. The Neighbour matrix is just the pairwise distance between the parts `i` and `j` of your system (<img src="https://render.githubusercontent.com/render/math?math=D_{ij}">) with an applied cutoff (<img src="https://render.githubusercontent.com/render/math?math=N_{ij}=D_{ij}\le\epsilon">) and is related to the adjacency matrix from graph theory by adding an identity matrix to the adjacency matrix (<img src="https://render.githubusercontent.com/render/math?math=A_{ij}=N_{ij} - I_{ij}">). The three boolean matrices that describe a system at some distance cutoff (<img src="https://render.githubusercontent.com/render/math?math=\epsilon">) are: the Identity matrix (<img src="https://render.githubusercontent.com/render/math?math=I_{ij} = D_{ij}\equiv0 ">), the Adjacency matrix (<img src="https://render.githubusercontent.com/render/math?math=A_{ij}= D_{ij}\le\epsilon - I_{ij}">) and the Community matrix (<img src="https://render.githubusercontent.com/render/math?math=C_{ij}=D_{ij}>\epsilon">). We note that summing the three matrices will return `1` for any `i,j` pair. 
+
+"Connection" algorithms, such as the two mentioned, evaluate every distance and add them to the same cluster if there is any true overlap for a specific distance cutoff. ["Link" algorithms](https://online.stat.psu.edu/stat555/node/85/) try to determine the number of clusters for all unique distances by reducing and ignoring some connections to already linked constituents of the system in accord with a chosen heuristic. 
+
+The "Link" codes are more efficient at creating a link hierarchy of the data but can be thought of as throwing away information at every linking step. The lost information is deemed unuseful by the heuristic. The full link algorithm determines the new cluster distance to the rest of the points in a self consistent fashion by employing the same heuristic. Using simple linkage, or `min` value distance assignment, will produce an equivalent [hierarchy](https://online.stat.psu.edu/stat555/node/86/) as compared to the one deduced by a connection algorithm. Except for some of the cases when there are distance ties in the link evaluation. This is a computational quirk that does not affect "connection" based hierarchy construction.
+
+The "Link" method is thereby not useful for the deterministic treatment of a particle system where all the true connections in it are important, such as in a water bulk system when you want all your quantum-mechanical waters to be treated at the same level of theory based on their connectivity at a specific level or distance. This is indeed why my connectivity algorithm was invented by me in 2009. If you are only doing black box statistics on a complete hierarchy then this distinction is not important and computational efficiency is probably what you care about. You can construct hierarchies from both algorithm types but the connection algorithm will always produce a unique and well-determined structure while the link algorithms will be unique but structurally dependent on how ties are resolved and which heuristic is employed for construction. The connection hierarchy is exact and deterministic, but slow to construct, while the link hierarchies are heuristic dependent, but fast to construct. We will study this more in the following code example as well as the case when they are equivalent.
+
+## 5.1 Link hierarchy construction
+The following code produces two distance matrices. One has distance ties and the other one does not. The second matrix is well known and the correct minimal linkage hierarchy is well known. Lets see compare the results between scipy and our method.
+```
+import numpy as np
+from graphtastic.fit import absolute_coordinates_to_distance_matrix
+from graphtastic.hierarchical import linkages, scipylinkages
+from graphtastic.utility import lint2lstr
+
+if __name__ == '__main__' :
+    
+    xds = np.array([ [5,2],
+                   [8,4],
+                   [4,6],
+                   [3,7],
+                   [8,7],
+                   [5,10]
+                  ])
+
+    tied_D = np.array([ np.sum((p-q)**2) for p in xds for q in xds ]).reshape(len(xds),len(xds))
+
+    print ( tied_D )
+    lnx1 = linkages ( tied_D.copy() , command='min' )
+    lnx2 = scipylinkages(tied_D,'min')
+
+    print ( '\n',lnx1 ,'\n', lnx2 )
+    
+    D = np.array([[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ])
+
+    print ('\n', np.array(D) )
+
+    lnx1 = linkages ( D , command='min' )
+    lnx2 = scipylinkages( D,'min')
+
+    print ( '\n',lnx1 ,'\n', lnx2 )
+```
+
+We study the results below
+```
+[[ 0 13 17 29 34 64]
+ [13  0 20 34  9 45]
+ [17 20  0  2 17 17]
+ [29 34  2  0 25 13]
+ [34  9 17 25  0 18]
+ [64 45 17 13 18  0]]
+
+ {'2.3': 2, '1.4': 9.0, '1.4.0': 13.0, '2.3.5': 13.0, '2.3.5.1.4.0': 17.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0} 
+ {'1': 2.0, '4': 2.0, '0': 2.0, '2.3': 2.0, '5': 2.0, '1.4': 9.0, '0.1.4': 13.0, '2.3.5': 13.0, '0.1.2.3.4.5': 17.0}
+
+ [[ 0  9  3  6 11]
+ [ 9  0  7  5 10]
+ [ 3  7  0  9  2]
+ [ 6  5  9  0  8]
+ [11 10  2  8  0]]
+
+ {'2.4': 2, '2.4.0': 3.0, '1.3': 5.0, '1.3.2.4.0': 6.0, '0': 0, '1': 0, '2': 0, '3': 0, '4': 0}
+ {'2.4': 2.0, '0': 2.0, '1': 2.0, '3': 2.0, '0.2.4': 3.0, '1.3': 5.0, '0.1.2.3.4': 6.0}
+```
+We see that the only difference for these two examples are how the unclustered indices are treated. In our method they are set to the identity distance value of zero while scipy attributes them the lowest non diagonal value in the distance matrix.
+
+## 5.2 Connectivity hierarchy construction
+Now we employ the `connectivity` algorithm for construction of the hierarchy. In the below code segment the first loop calls the function directly and the second calls the `impetuous.hierarchy_matrix` function
+```
+    import graphtastic.hierarchical as imph
+    from graphtastic.clustering import connectivity
+
+    unique_distances = sorted(list(set(D.reshape(-1))))
+    for u in unique_distances :
+        results = connectivity(D,u)
+        print ( u , results )
+        if len(results[0]) == 1 :
+            break
+
+    res = imph.hierarchy_matrix ( D )
+    print ( res )
+```
+with the results
+```
+0 ([1, 1, 1, 1, 1], array([[0, 0],
+       [1, 1],
+       [2, 2],
+       [3, 3],
+       [4, 4]]))
+2 ([1, 1, 1, 2], array([[0, 0],
+       [1, 1],
+       [3, 2],
+       [2, 3],
+       [3, 4]]))
+3 ([1, 1, 3], array([[2, 0],
+       [0, 1],
+       [2, 2],
+       [1, 3],
+       [2, 4]]))
+5 ([2, 3], array([[1, 0],
+       [0, 1],
+       [1, 2],
+       [0, 3],
+       [1, 4]]))
+6 ([5], array([[0, 0],
+       [0, 1],
+       [0, 2],
+       [0, 3],
+       [0, 4]]))
+{'hierarchy matrix':(array([[0, 1, 2, 3, 4],
+       [0, 1, 3, 2, 3],
+       [2, 0, 2, 1, 2],
+       [1, 0, 1, 0, 1],
+       [0, 0, 0, 0, 0]]),'lookup':{0: [0, 0, 1.0], 1: [1, 2, 1.25], 2: [2, 3, 1.6666666666666667], 3: [3, 5, 2.5], 4: [4, 6, 5.0]}}
+```
+and we see that the system has 5 unique levels. The hierarchy matrix increase in distance as you traverse down. The first row is level `0` with distance `0` and all items are assigned to each own cluster. The third row, level `2`, contains three clusters at distance `3` and the three clusters are `0.2.4` as well as `1` and `3`. We see that they become joined at level `3` corresponding to distance `5`.
+
+The final complete clustering results can be obtained in this alternative way for the `connectivity` hierarchy
+```
+    print ( imph.reformat_hierarchy_matrix_results ( res['hierarchy matrix'],res['lookup'] ) )
+```
+with the result
+```
+{(0,): 0, (1,): 0, (2,): 0, (3,): 0, (4,): 0, (2, 4): 2, (0, 2, 4): 3, (1, 3): 5, (0, 1, 2, 3, 4): 6}
+```
+which is well aligned with the previous results, but the `connectivity` approach is slower to employ for constructing a hierarchy.
+
+## Comparing hierarchies of an equidistant plaque
+
+We know by heart that a triagonal mesh with a link length of one is fully connected at only that distance. So lets study what the hierarchical clustering results will yield.
+```
+    def generate_plaque(N) :
+        L,l = 1,1
+        a  = np.array( [l*0.5, np.sqrt(3)*l*0.5] )
+        b  = np.array( [l*0.5,-np.sqrt(3)*l*0.5] )
+        x_ = np.linspace( 1,N,N )
+        y_ = np.linspace( 1,N,N )
+        Nx , My = np.meshgrid ( x_,y_ )
+        Rs = np.array( [ a*n+b*m for n,m in zip(Nx.reshape(-1),My.reshape(-1)) ] )
+        return ( Rs )
+
+    from graphtastic.fit import absolute_coordinates_to_distance_matrix as c2D
+    D = c2D( generate_plaque(N=3))
+    #
+    # CONNECTIVITY CONSTRUCTION
+    print ( imph.reformat_hierarchy_matrix_results ( *imph.hierarchy_matrix( D ).values() ) )
+    #
+    # SCIPY LINKAGE CONSTRUCTION
+    print ( scipylinkages(D,'min',bStrKeys=False) )
+```
+which readily tells us that
+```
+{(0,): 0.0, (1,): 0.0, (2,): 0.0, (3,): 0.0, (4,): 0.0, (5,): 0.0, (6,): 0.0, (7,): 0.0, (8,): 0.0, (0, 1, 3, 4): 0.9999999999999999, (2, 5): 0.9999999999999999, (6, 7): 0.9999999999999999, (0, 1, 2, 3, 4, 5, 6, 7, 8): 1.0}
+
+{(6, 7): 0.9999999999999999, (0, 1, 3, 4): 0.9999999999999999, (2, 5): 0.9999999999999999, (8,): 0.9999999999999999, (0, 1, 2, 3, 4, 5, 6, 7, 8): 1.0}
+```
+and we see that everything is connected at the distance `1` and that the numerical treatment seems to have confused both algorithms in a similar fashion, but that `scipy` is assigning single index clusters the distance `1`
+
+So it is clear that a linkage method is more efficient for constructing complete hierarchies while a single `connectivity` calculation will be faster if you only want the clusters at a predetermined distance. Because in that case you don't need to calculate the entire hierarchy.
 
 
 # Manually updated code backups for this library :
