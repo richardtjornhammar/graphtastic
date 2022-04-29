@@ -25,3 +25,15 @@ def read_xyz( fname:str = 'argon.xyz', sep:str = ' ') -> list :
             if len(lsp) == 4:
                 coords.append( ( lsp[0],[ float(c) for c in lsp[1:]] ) )
     return ( coords )
+
+def encode_categorical( G:list = ['Male','Male','Female'] )-> dict :
+    #
+    # CREATES AN BINARY ENCODING MATRIX FROM THE SUPPLIED LIST
+    #
+    ugl = list(set(G)) ; n = len(ugl) ; m = len(G)
+    lgu = { u:j for u,j in zip(ugl,range(n)) }
+    enc_d = np.zeros(n*m).reshape(m,n)
+    for i in range ( m ) :
+        j = lgu[G[i]]
+        enc_d[i,j] = 1
+    return ( { 'encoding':enc_d , 'names':ugl } )
