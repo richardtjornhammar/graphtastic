@@ -43,7 +43,7 @@ def frac_procentile ( vals:list[float]=[12.123, 1.2, 1000, 4] ):
     return ( vals )
 
 
-def get_procentile ( vals:list[flost], procentile:float = 50 ):
+def get_procentile ( vals:list[float], procentile:float = 50 ):
     fp_   = procentile/100.0
     proc  = frac_procentile(vals)
     ma,mi = np.max(proc),np.min(proc)

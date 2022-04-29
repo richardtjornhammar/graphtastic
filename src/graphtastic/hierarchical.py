@@ -16,7 +16,7 @@ limitations under the License.
 contact__ = "richard.tjornhammar@gmail.com"
 
 import numpy as np
-from graphtastic.utility import nppop, unpack, rem, error, ordered_remove
+from graphtastic.utility import nppop, unpack, rem, lint2lstr
 
 
 def hierarchy_matrix ( distance_matrix:np.array   = None ,
