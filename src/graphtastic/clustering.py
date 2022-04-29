@@ -355,10 +355,3 @@ def reformat_dbscan_results ( results:dict ) -> dict :
                     else :
                         clusters[ icontent ] = [ c[1] ]
         return ( clusters )
-
-if __name__=='__main__' :
-    # NOW CALLED LINAKGES IN HIERARCHICAL
-    #D = [[0,9,3,6,11],[9,0,7,5,10],[3,7,0,9,2],[6,5,9,0,8],[11,10,2,8,0] ]
-    #print ( np.array(D) )
-    #print ( 'min>' , linkage( D, command='min') )
-    #print ( 'max>' , linkage( D, command='max') )
