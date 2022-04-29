@@ -450,3 +450,29 @@ def eigensolve_2b2 ( M:np.array ) :
 
     return ( np.array([lambda0,lambda1]),e10p[0],e10m[0] )
 
+import re
+def find_category_variables( istr ) :
+    return ( re.findall( r'C\((.*?)\)', istr ) )
+
+def find_category_interactions ( istr:str ) :
+    all_cats = re.findall( r'C\((.*?)\)', istr )
+    interacting = [ ':' in c for c in istr.split(')') ][ 0:len(all_cats) ]
+    interacting_categories = [ [all_cats[i-1],all_cats[i]] for i in range(1,len(interacting)) if interacting[i] ]
+    return ( interacting_categories )
+
+def subArraysOf ( Array:list,Array_:list=None ) -> list :
+    if Array_ == None :
+        Array_ = Array[:-1]
+    if Array == [] :
+        if Array_ == [] :
+            return ( [] )
+        return( subArraysOf(Array_,Array_[:-1]) )
+    return([Array]+subArraysOf(Array[1:],Array_))
+
+def permuter( inputs:list , n:int ) -> list :
+    # permuter( inputs = ['T2D','NGT','Female','Male'] , n = 2 )
+    return( [p[0] for p in zip(itertools.permutations(inputs,n))] )
+
+def grouper ( inputs, n ) :
+    iters = [iter(inputs)] * n
+    return zip ( *iters )
