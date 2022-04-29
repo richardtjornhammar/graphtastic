@@ -193,7 +193,7 @@ class NodeGraph ( Node ) :
     def list_roots ( self ) ->  type(list(str())) :
         roots = [] # BLOODY ROOTS
         for name,node in self.items():
-            if node.can_it_be_root() :
+            if node.is_a_root() :
                 roots.append( name )
         return ( roots )
 
