@@ -301,6 +301,7 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
         eps:float = None, minPts:int = None , bVerbose:bool = False ) -> dict :
 
     def absolute_coordinates_to_distance_matrix ( Q:np.array , power:int=2 , bInvPow:bool=False ) -> np.array :
+        # UNUSED FALLBACK
         DP = np.array( [ np.sum((np.array(p)-np.array(q))**power) for p in Q for q in Q] ).reshape(np.shape(Q)[0],np.shape(Q)[0])
         if bInvPow :
             DP = DP**(1.0/power)
@@ -325,6 +326,7 @@ def dbscan ( coordinates:np.array = None , distance_matrix:np.array = None ,
         exit(1)
 
     if distance_matrix is None :
+        from graphtastic.fit import absolute_coordinates_to_distance_matrix
         distance_matrix_ = absolute_coordinates_to_distance_matrix ( coordinates )
         eps = eps**2.0
     else :

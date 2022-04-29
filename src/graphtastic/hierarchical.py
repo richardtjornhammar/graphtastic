@@ -22,7 +22,8 @@ from graphtastic.utility import nppop, unpack, rem, lint2lstr
 def hierarchy_matrix ( distance_matrix:np.array   = None ,
                        coordinates:np.array       = None ,
                        linkage_distances:np.array = None ) -> dict :
-    from graphtastic.clustering import connectivity , absolute_coordinates_to_distance_matrix
+    from graphtastic.clustering import connectivity
+    from graphtastic.fit import absolute_coordinates_to_distance_matrix
     import operator
     if not operator.xor( coordinates is None , distance_matrix is None ) :
         print ( "ONLY COORDINATES OR A DISTANCE MATRIX" )
