@@ -476,3 +476,9 @@ def permuter( inputs:list , n:int ) -> list :
 def grouper ( inputs, n ) :
     iters = [iter(inputs)] * n
     return zip ( *iters )
+
+
+def areTheyIsomorphic( adjacency_matrix1, adjacency_matrix2 , TOL=1E-10 ):
+    u1,s1,v1t = np.linalg.svd(adjacency_matrix1)
+    u2,s2,v2t = np.linalg.svd(adjacency_matrix2)
+    return ( bool( np.sum(np.abs(vt)-np.abs(v2t))<TOL ) )
