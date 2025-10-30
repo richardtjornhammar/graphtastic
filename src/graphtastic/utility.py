@@ -481,4 +481,5 @@ def grouper ( inputs, n ) :
 def areTheyIsomorphic( adjacency_matrix1, adjacency_matrix2 , TOL=1E-10 ):
     u1,s1,v1t = np.linalg.svd(adjacency_matrix1)
     u2,s2,v2t = np.linalg.svd(adjacency_matrix2)
-    return ( bool( np.sum(np.abs(vt)-np.abs(v2t))<TOL ) )
+    nm = np.prod(np.shape(adjacency_matrix1))
+    return ( bool( np.sum( (np.abs(v2t)-np.abs(v1t)) )/nm < TOL ) )
